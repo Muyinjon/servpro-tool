@@ -1,7 +1,6 @@
 (function initPanel(global) {
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
   const selectorsApi = root.selectors;
-  const STORAGE_KEY = "servproUploadHelper.lastImageType";
 
   function getStorageApi() {
     return global.chrome && global.chrome.storage && global.chrome.storage.local
@@ -9,14 +8,14 @@
       : null;
   }
 
-  function loadSavedType(select) {
+  function loadSavedType(select, storageKey) {
     const storage = getStorageApi();
-    if (!storage) {
+    if (!storage || !storageKey) {
       return;
     }
 
-    storage.get([STORAGE_KEY], function onLoad(result) {
-      const value = result && result[STORAGE_KEY];
+    storage.get([storageKey], function onLoad(result) {
+      const value = result && result[storageKey];
       if (!value) {
         return;
       }
@@ -31,13 +30,13 @@
     });
   }
 
-  function saveSelectedType(value) {
+  function saveSelectedType(value, storageKey) {
     const storage = getStorageApi();
-    if (!storage) {
+    if (!storage || !storageKey) {
       return;
     }
 
-    storage.set({ [STORAGE_KEY]: value });
+    storage.set({ [storageKey]: value });
   }
 
   function ensureStyles(doc) {
@@ -48,19 +47,25 @@
     const style = doc.createElement("style");
     style.id = "servpro-upload-helper-styles";
     style.textContent = [
-      "#servpro-upload-helper-panel{position:sticky;top:8px;z-index:2147483647;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:8px;border:1px solid #c7d2da;border-radius:8px;background:#ffffff;color:#1f2933;font:13px/1.4 Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.12)}",
-      "#servpro-upload-helper-panel select,#servpro-upload-helper-panel button{font:inherit}",
-      "#servpro-upload-helper-panel select{min-width:220px;padding:6px}",
-      "#servpro-upload-helper-panel button{padding:7px 10px;border:1px solid #1976d2;border-radius:6px;background:#1976d2;color:#fff;cursor:pointer}",
-      "#servpro-upload-helper-panel button[disabled]{opacity:.6;cursor:default}",
-      "#servpro-upload-helper-panel .servpro-upload-helper-status{min-width:160px;color:#334e68}",
-      "#servpro-upload-helper-panel .servpro-upload-helper-title{font-weight:700}"
+      "[id$='helper-panel']{position:sticky;top:8px;z-index:2147483647;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:8px;border:1px solid #c7d2da;border-radius:8px;background:#ffffff;color:#1f2933;font:13px/1.4 Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.12)}",
+      "[id$='helper-panel'] select,[id$='helper-panel'] button{font:inherit}",
+      "[id$='helper-panel'] select{min-width:220px;padding:6px}",
+      "[id$='helper-panel'] button{padding:7px 10px;border:1px solid #1976d2;border-radius:6px;background:#1976d2;color:#fff;cursor:pointer}",
+      "[id$='helper-panel'] button[disabled]{opacity:.6;cursor:default}",
+      "[id$='helper-panel'] .servpro-upload-helper-status{min-width:160px;color:#334e68}",
+      "[id$='helper-panel'] .servpro-upload-helper-title{font-weight:700}"
     ].join("");
     doc.head.appendChild(style);
   }
 
   function createPanel(doc, options) {
-    const existing = doc.getElementById("servpro-upload-helper-panel");
+    const panelId = (options && options.panelId) || "servpro-upload-helper-panel";
+    const panelTitle = (options && options.title) || "Servpro Upload Helper";
+    const selectOptions = (options && options.selectOptions) || selectorsApi.IMAGE_TYPES;
+    const storageKey = options && options.storageKey;
+    const primaryButtonLabel = (options && options.buttonLabel) || "Apply to all visible uploads";
+
+    const existing = doc.getElementById(panelId);
     if (existing) {
       return existing;
     }
@@ -68,28 +73,28 @@
     ensureStyles(doc);
 
     const panel = doc.createElement("div");
-    panel.id = "servpro-upload-helper-panel";
+    panel.id = panelId;
 
     const title = doc.createElement("span");
     title.className = "servpro-upload-helper-title";
-    title.textContent = "Servpro Upload Helper";
+    title.textContent = panelTitle;
 
     const select = doc.createElement("select");
-    select.id = "servpro-upload-helper-type";
-    for (const imageType of selectorsApi.IMAGE_TYPES) {
+    select.id = panelId + "-type";
+    for (const imageType of selectOptions) {
       const option = doc.createElement("option");
       option.value = imageType;
       option.textContent = imageType;
       select.appendChild(option);
     }
-    loadSavedType(select);
+    loadSavedType(select, storageKey);
     select.addEventListener("change", function onTypeChange() {
-      saveSelectedType(select.value);
+      saveSelectedType(select.value, storageKey);
     });
 
     const button = doc.createElement("button");
     button.type = "button";
-    button.textContent = "Apply to all visible uploads";
+    button.textContent = primaryButtonLabel;
 
     const refreshButton = doc.createElement("button");
     refreshButton.type = "button";
@@ -108,7 +113,7 @@
       status.textContent = "Applying type...";
 
       try {
-        saveSelectedType(select.value);
+        saveSelectedType(select.value, storageKey);
         const result = await options.onApply(select.value);
         status.textContent = result;
       } catch (error) {

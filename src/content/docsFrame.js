@@ -8,99 +8,107 @@
     return;
   }
 
-  let mountedPanel = null;
+  const flowConfigs = Object.values(selectorsApi.FLOWS || {});
+  const mountedPanels = new Map();
   let refreshTimer = null;
   let observer = null;
 
-  function pathLooksSupported() {
-    return selectorsApi.SELECTORS.docsFramePathHints.some(function matches(hint) {
-      return global.location.pathname.indexOf(hint) !== -1;
+  function hasUploadUi(rootNode, flow) {
+    const scope = rootNode || document;
+    return flow.uploadMarkers.some(function matches(selector) {
+      return Boolean(scope.querySelector(selector));
     });
   }
 
-  function hasServproUploadUi(rootNode) {
+  function hasVisibleUploadUi(rootNode, flow) {
     const scope = rootNode || document;
-    return Boolean(
-      scope.querySelector("#importDialog") ||
-      scope.querySelector("#imageAttachmentsWrapper") ||
-      scope.querySelector("input[name='imageAttachments']") ||
-      scope.querySelector("ul.k-upload-files > li.k-file")
-    );
+    return flow.uploadMarkers.some(function matches(selector) {
+      const element = scope.querySelector(selector);
+      return Boolean(element) && helpers.isVisible(element);
+    });
   }
 
   function frameLooksSupported() {
-    return hasServproUploadUi(document);
+    return flowConfigs.some(function matches(flow) {
+      return hasUploadUi(document, flow);
+    });
   }
 
-  function getVisibleImportWindow() {
-    const candidates = Array.from(
-      document.querySelectorAll(
-        '.k-window[aria-labelledby="importDialog_wnd_title"], ' +
-        '.k-window-content[aria-labelledby="importDialog_wnd_title"], ' +
-        '#importDialog'
-      )
-    )
-      .map(function resolveWindowHost(candidate) {
-        return candidate.classList.contains("k-window") ? candidate : candidate.closest(".k-window") || candidate;
-      })
-      .filter(function dedupe(candidate, index, items) {
-        return candidate && items.indexOf(candidate) === index;
-      });
+  function dedupeElements(elements) {
+    return elements.filter(function dedupe(candidate, index, items) {
+      return candidate && items.indexOf(candidate) === index;
+    });
+  }
+
+  function getVisibleDialogHost(flow) {
+    const candidates = dedupeElements(
+      flow.dialogSelectors
+        .flatMap(function query(selector) {
+          return Array.from(document.querySelectorAll(selector));
+        })
+        .map(function resolveWindowHost(candidate) {
+          return candidate.classList.contains("k-window") ? candidate : candidate.closest(".k-window") || candidate;
+        })
+    );
 
     return candidates.find(function matchVisible(candidate) {
       return helpers.isVisible(candidate);
     }) || null;
   }
 
-  function getImportDialog() {
-    const dialog = document.querySelector("#importDialog");
-    const visibleWindow = getVisibleImportWindow();
-
-    if (visibleWindow) {
-      return visibleWindow;
+  function getDialogHost(flow) {
+    const visibleHost = getVisibleDialogHost(flow);
+    if (visibleHost) {
+      return visibleHost;
     }
 
-    if (!dialog) {
+    const sourceDialog = document.querySelector(flow.dialogSelectors[0]);
+    if (!sourceDialog) {
       return null;
     }
 
-    const hasUploadUi =
-      Boolean(dialog.querySelector(".k-upload")) ||
-      Boolean(dialog.querySelector("ul.k-upload-files")) ||
-      Boolean(dialog.querySelector("input[name='imageAttachments']"));
-
-    return hasUploadUi ? dialog : null;
+    return hasVisibleUploadUi(sourceDialog, flow) ? sourceDialog : null;
   }
 
-  function getUploadListRows() {
-    const importDialog = getImportDialog();
-    const scopedRows = importDialog
-      ? Array.from(importDialog.querySelectorAll("ul.k-upload-files > li.k-file"))
+  function rowBelongsToFlow(row, flow) {
+    const dialogHost = getDialogHost(flow);
+    if (!dialogHost) {
+      return false;
+    }
+
+    return dialogHost === row || dialogHost.contains(row);
+  }
+
+  function getUploadListRows(flow) {
+    const dialogHost = getDialogHost(flow);
+    const scopedRows = dialogHost
+      ? flow.rowSelectors.flatMap(function query(selector) {
+          return Array.from(dialogHost.querySelectorAll(selector));
+        }).filter(function onlyFlowRows(row) {
+          return rowBelongsToFlow(row, flow);
+        })
       : [];
 
     if (scopedRows.length) {
-      return scopedRows;
+      return dedupeElements(scopedRows);
     }
 
-    return Array.from(document.querySelectorAll("ul.k-upload-files > li.k-file")).filter(function withinVisibleWindow(row) {
-      const windowHost = row.closest(".k-window");
-      if (!windowHost) {
-        return row.closest("#importDialog") !== null;
-      }
-
-      return helpers.isVisible(windowHost);
+    return dedupeElements(flow.rowSelectors.flatMap(function query(selector) {
+      return Array.from(document.querySelectorAll(selector));
+    })).filter(function withinVisibleWindow(row) {
+      return rowBelongsToFlow(row, flow);
     });
   }
 
-  function containsTypeDropdown(element) {
-    return Boolean(helpers.queryFirst(element, selectorsApi.SELECTORS.dropdownHosts));
+  function containsTypeDropdown(element, flow) {
+    return Boolean(findTypeDropdown(element, flow));
   }
 
-  function getUploadRows() {
-    const importDialogRows = getUploadListRows();
+  function getUploadRows(flow) {
+    const importDialogRows = getUploadListRows(flow);
     if (importDialogRows.length) {
       return importDialogRows.filter(function onlyUsable(row) {
-        return helpers.isVisible(row) && Boolean(findTypeDropdown(row)) && Boolean(findFileName(row));
+        return helpers.isVisible(row) && Boolean(findTypeDropdown(row, flow)) && Boolean(findFileName(row));
       });
     }
 
@@ -108,7 +116,11 @@
     const candidates = helpers.queryAll(document, selectorsApi.SELECTORS.rowCandidates);
 
     for (const candidate of candidates) {
-      if (candidate.id === "servpro-upload-helper-panel" || candidate.closest("#servpro-upload-helper-panel")) {
+      if (candidate.closest("[id$='helper-panel']")) {
+        continue;
+      }
+
+      if (!rowBelongsToFlow(candidate, flow)) {
         continue;
       }
 
@@ -116,7 +128,7 @@
         continue;
       }
 
-      if (!containsTypeDropdown(candidate)) {
+      if (!containsTypeDropdown(candidate, flow)) {
         continue;
       }
 
@@ -163,18 +175,27 @@
     return "";
   }
 
-  function findTypeDropdown(row) {
-    const nestedKendoDropdown = row.querySelector('span[data-role="dropdownlist"][aria-owns*="_imageType_listbox"]');
+  function findTypeDropdown(row, flow) {
+    const preferredSelector = flow.dropdownSelectors.find(function match(selector) {
+      return selector.indexOf('span[data-role="dropdownlist"]') !== -1;
+    });
+    const nestedKendoDropdown = preferredSelector ? row.querySelector(preferredSelector) : null;
     if (nestedKendoDropdown && helpers.isVisible(nestedKendoDropdown)) {
       return nestedKendoDropdown;
     }
 
-    const explicitHost = row.querySelector(".imageTypes.fileRow-dropdown.k-dropdown");
+    const explicitHost = flow.dropdownSelectors
+      .map(function query(selector) {
+        return row.querySelector(selector);
+      })
+      .find(function visible(element) {
+        return element && helpers.isVisible(element);
+      });
     if (explicitHost && helpers.isVisible(explicitHost)) {
       return explicitHost;
     }
 
-    const hosts = helpers.queryAll(row, selectorsApi.SELECTORS.dropdownHosts).filter(function onlyVisible(element) {
+    const hosts = helpers.queryAll(row, selectorsApi.SELECTORS.dropdownHosts.concat(flow.dropdownSelectors)).filter(function onlyVisible(element) {
       return helpers.isVisible(element);
     });
 
@@ -183,11 +204,13 @@
       const normalizedOwns = selectorsApi.normalizeText(owns);
       const displayedText = selectorsApi.normalizeText(helpers.getDisplayedDropdownText(host));
 
-      if (normalizedOwns.indexOf("imagetype") !== -1 || normalizedOwns.indexOf("listbox") !== -1) {
+      if (flow.dropdownOwnsHints.some(function matches(hint) {
+        return normalizedOwns.indexOf(hint) !== -1;
+      })) {
         return host;
       }
 
-      if (displayedText && selectorsApi.IMAGE_TYPES.some(function matches(type) {
+      if (displayedText && flow.types.some(function matches(type) {
         return selectorsApi.normalizeText(type) === displayedText;
       })) {
         return host;
@@ -197,15 +220,15 @@
     return hosts[0] || null;
   }
 
-  async function applyTypeToAllRows(imageType) {
-    const importDialog = getImportDialog();
+  async function applyTypeToAllRows(flow, imageType) {
+    const importDialog = getDialogHost(flow);
     if (!importDialog) {
       return "Import dialog is not open";
     }
 
-    const rows = getUploadRows();
+    const rows = getUploadRows(flow);
     if (!rows.length) {
-      const rawRows = getUploadListRows();
+      const rawRows = getUploadListRows(flow);
       return rawRows.length
         ? "Files are listed, but dropdowns were not detected"
         : "No uploaded files found yet";
@@ -215,7 +238,7 @@
     let skipped = 0;
 
     for (const row of rows) {
-      const dropdown = findTypeDropdown(row);
+      const dropdown = findTypeDropdown(row, flow);
       if (!dropdown) {
         skipped += 1;
         continue;
@@ -248,44 +271,35 @@
     return "Updated " + updated + " row(s), skipped " + skipped;
   }
 
-  function findPanelContainer() {
-    const importDialog = getImportDialog();
-    if (importDialog) {
-      return importDialog;
-    }
-
-    const bodyFirstElement = document.body && document.body.firstElementChild;
-    if (bodyFirstElement && bodyFirstElement.parentElement === document.body) {
-      return document.body;
-    }
-
-    return document.body;
+  function getPanelState(flow) {
+    return mountedPanels.get(flow.key) || null;
   }
 
-  function refreshPanelStatus() {
-    if (!mountedPanel) {
+  function refreshPanelStatus(flow) {
+    const panelState = getPanelState(flow);
+    if (!panelState) {
       return;
     }
 
-    const rawRows = getUploadListRows();
-    const importDialog = getImportDialog();
+    const rawRows = getUploadListRows(flow);
+    const importDialog = getDialogHost(flow);
     if (!importDialog && !rawRows.length) {
-      mountedPanel.setStatus("Import dialog closed");
+      panelState.api.setStatus("Import dialog closed");
       return;
     }
 
     if (!rawRows.length) {
-      mountedPanel.setStatus("Import dialog open, waiting for files");
+      panelState.api.setStatus("Import dialog open, waiting for files");
       return;
     }
 
-    const rowCount = getUploadRows().length;
+    const rowCount = getUploadRows(flow).length;
     if (!rowCount) {
-      mountedPanel.setStatus("Files listed, dropdowns not resolved yet");
+      panelState.api.setStatus("Files listed, dropdowns not resolved yet");
       return;
     }
 
-    mountedPanel.setStatus("Found " + rowCount + " upload row(s)");
+    panelState.api.setStatus("Found " + rowCount + " upload row(s)");
   }
 
   function scheduleRefresh() {
@@ -295,28 +309,52 @@
 
     refreshTimer = global.setTimeout(function runRefresh() {
       refreshTimer = null;
-      refreshPanelStatus();
+      flowConfigs.forEach(function refresh(flow) {
+        refreshPanelStatus(flow);
+      });
     }, 500);
   }
 
-  function mount() {
-    if (mountedPanel) {
-      refreshPanelStatus();
+  function mount(flow) {
+    const existingPanel = getPanelState(flow);
+    const container = getDialogHost(flow);
+    if (!container) {
       return;
     }
 
-    const container = findPanelContainer();
-    mountedPanel = panelApi.mountPanel(document, container, {
-      onApply: applyTypeToAllRows,
-      onRefresh: refreshPanelStatus
+    if (existingPanel) {
+      if (!existingPanel.api.element.isConnected || existingPanel.api.element.parentElement !== container) {
+        container.insertBefore(existingPanel.api.element, container.firstChild);
+      }
+      refreshPanelStatus(flow);
+      return;
+    }
+
+    const panel = panelApi.mountPanel(document, container, {
+      panelId: flow.panelId,
+      title: flow.panelTitle,
+      selectOptions: flow.types,
+      storageKey: flow.storageKey,
+      buttonLabel: flow.buttonLabel,
+      onApply: function onApply(selectedType) {
+        return applyTypeToAllRows(flow, selectedType);
+      },
+      onRefresh: function onRefresh() {
+        refreshPanelStatus(flow);
+      }
     });
-    refreshPanelStatus();
+    mountedPanels.set(flow.key, { api: panel });
+    refreshPanelStatus(flow);
   }
 
   function boot() {
     global.setTimeout(function delayedMount() {
       if (frameLooksSupported()) {
-        mount();
+        flowConfigs.forEach(function maybeMount(flow) {
+          if (getDialogHost(flow)) {
+            mount(flow);
+          }
+        });
         scheduleRefresh();
       }
     }, 1200);
@@ -324,13 +362,15 @@
     observer = new MutationObserver(function onMutation(mutations) {
       const hasRelevantChange = mutations.some(function isRelevant(mutation) {
         const target = mutation.target;
-        return !(target instanceof Element) || !target.closest("#servpro-upload-helper-panel");
+        return !(target instanceof Element) || !target.closest("[id$='helper-panel']");
       });
 
       if (hasRelevantChange) {
-        if (!mountedPanel && frameLooksSupported()) {
-          mount();
-        }
+        flowConfigs.forEach(function maybeMount(flow) {
+          if (getDialogHost(flow)) {
+            mount(flow);
+          }
+        });
         scheduleRefresh();
       }
     });
