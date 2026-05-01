@@ -43,3 +43,49 @@ This first version focuses on one workflow:
 
 - Add filename-based auto-matching rules.
 - Add quick buttons for common categories.
+
+## WorkCenter scrape + TeamAllenssm import
+
+This version also adds a cross-page helper for moving core WorkCenter job data into TeamAllenssm.
+
+### Supported flow
+
+1. Open a WorkCenter project page on `servpronet.io`.
+2. Use the floating **WorkCenter Import Helper**:
+   - `Scrape WorkCenter` saves a normalized payload in local extension storage.
+   - `Export JSON` downloads the payload as a `.json` file for CRM/other tools.
+   - `Copy JSON` copies the payload to clipboard.
+   - `Autofill TeamAllenssm` opens TeamAllenssm new-job page.
+3. On `teamallenssm.com/jobs1_add.php`, use **TeamAllenssm Import Helper**:
+   - Click `Fill from WorkCenter payload`.
+   - Optionally choose a specific record from the last 5 scraped history entries before filling.
+   - Optional: enable `Apply recon defaults` to set Coordinator and Recon Mgr on recon/rebuild jobs.
+   - Review values, then click Save manually.
+
+### Core fields in payload
+
+- Project: name, ID, progress
+- Loss: type, cause, claim number
+- Contact: customer name, phones, email
+- Address: line 1, line 2, city, state, zip, year built, country, full address
+- Classification: property type, franchise name, mapped business unit, pay type
+- Insurance carrier
+- Metadata: source URL and scrape timestamp
+
+### Notes
+
+- Selector logic uses label/value fallbacks so minor markup changes are tolerated.
+- Franchise to Bus.Unit mapping currently includes:
+  - `Northwest Brooklyn` -> `NW Brooklyn`
+  - `Northern Staten Island` -> `Staten Island`
+  - `The Rockaways, Coney Island` -> `Rockaways/Coney`
+  - `Forest Hills/Ridgewood` -> `Forest Hills`
+  - `Bay Ridge` -> `Bay Ridge`
+  - `Mill Basin, Flatlands` -> `Mill Basin`
+- Name logic:
+  - Commercial jobs prefer project name as `businessName`.
+  - Non-commercial jobs can fallback project name to `customerName` when contact name is weak/missing.
+- Claim number is sourced from `Claim Number` with fallback parsing.
+- Autofill maps by TeamAllenssm field IDs and dynamic address prefixes.
+- Dropdown fill uses text matching; if no matching option exists, the helper reports missing fields.
+- Payload history stores last 5 scrapes in extension local storage (most recent first).

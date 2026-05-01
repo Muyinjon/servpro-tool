@@ -1,0 +1,650 @@
+{
+    "title": "Recording 5/1/2026 at 3:27:25 PM",
+    "steps": [
+        {
+            "type": "setViewport",
+            "width": 1379,
+            "height": 930,
+            "deviceScaleFactor": 1,
+            "isMobile": false,
+            "hasTouch": false,
+            "isLandscape": false
+        },
+        {
+            "type": "navigate",
+            "url": "https://teamallenssm.com/jobs1_add.php?",
+            "assertedEvents": [
+                {
+                    "type": "navigation",
+                    "url": "https://teamallenssm.com/jobs1_add.php?",
+                    "title": "Jobs, Add new"
+                }
+            ]
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Bus. Unit *"
+                ],
+                [
+                    "#value_BusinessUnit_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_BusinessUnit_1\"]"
+                ],
+                [
+                    "pierce/#value_BusinessUnit_1"
+                ]
+            ],
+            "offsetY": 3.8125,
+            "offsetX": 103
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Customer *[role=\"textbox\"]"
+                ],
+                [
+                    "#value_Customer_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Customer_1\"]"
+                ],
+                [
+                    "pierce/#value_Customer_1"
+                ]
+            ],
+            "offsetY": 15.8125,
+            "offsetX": 7.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Business[role=\"textbox\"]"
+                ],
+                [
+                    "#value_Business_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Business_1\"]"
+                ],
+                [
+                    "pierce/#value_Business_1"
+                ]
+            ],
+            "offsetY": 8.8125,
+            "offsetX": 52.25
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Type *"
+                ],
+                [
+                    "#value_Commercial_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Commercial_1\"]"
+                ],
+                [
+                    "pierce/#value_Commercial_1"
+                ]
+            ],
+            "offsetY": 18.8125,
+            "offsetX": 62.6875
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Phone 1 *[role=\"textbox\"]"
+                ],
+                [
+                    "#value_PhonePrimary_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_PhonePrimary_1\"]"
+                ],
+                [
+                    "pierce/#value_PhonePrimary_1"
+                ]
+            ],
+            "offsetY": 18.8125,
+            "offsetX": 44.640625
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Phone 2[role=\"textbox\"]"
+                ],
+                [
+                    "#value_PhoneAlternate_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_PhoneAlternate_1\"]"
+                ],
+                [
+                    "pierce/#value_PhoneAlternate_1"
+                ]
+            ],
+            "offsetY": 8.8125,
+            "offsetX": 58.453125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/EMail *[role=\"textbox\"]"
+                ],
+                [
+                    "#value_EMail_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_EMail_1\"]"
+                ],
+                [
+                    "pierce/#value_EMail_1"
+                ]
+            ],
+            "offsetY": 17.8125,
+            "offsetX": 110.21875
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Pay Type *"
+                ],
+                [
+                    "#value_fkJobType_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_fkJobType_1\"]"
+                ],
+                [
+                    "pierce/#value_fkJobType_1"
+                ]
+            ],
+            "offsetY": 5.8125,
+            "offsetX": 112.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Insurance Company"
+                ],
+                [
+                    "#value_InsuranceCompany_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_InsuranceCompany_1\"]"
+                ],
+                [
+                    "pierce/#value_InsuranceCompany_1"
+                ]
+            ],
+            "offsetY": 16.8125,
+            "offsetX": 54.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Loss Type *"
+                ],
+                [
+                    "#value_fkLossType_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_fkLossType_1\"]"
+                ],
+                [
+                    "pierce/#value_fkLossType_1"
+                ]
+            ],
+            "offsetY": 14.8125,
+            "offsetX": 84
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Coordinator"
+                ],
+                [
+                    "#value_Coordinator_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Coordinator_1\"]"
+                ],
+                [
+                    "pierce/#value_Coordinator_1"
+                ]
+            ],
+            "offsetY": 11.8125,
+            "offsetX": 139.859375
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Sales Mgr 1"
+                ],
+                [
+                    "#value_fkSalesPId_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_fkSalesPId_1\"]"
+                ],
+                [
+                    "pierce/#value_fkSalesPId_1"
+                ]
+            ],
+            "offsetY": 14.8125,
+            "offsetX": 84.09375
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Sales Mgr 2"
+                ],
+                [
+                    "#value_fkSalesP2Id_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_fkSalesP2Id_1\"]"
+                ],
+                [
+                    "pierce/#value_fkSalesP2Id_1"
+                ]
+            ],
+            "offsetY": 17.8125,
+            "offsetX": 117.140625
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Proj Mgr"
+                ],
+                [
+                    "#value_fkPrjMan_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_fkPrjMan_1\"]"
+                ],
+                [
+                    "pierce/#value_fkPrjMan_1"
+                ]
+            ],
+            "offsetY": 16.8125,
+            "offsetX": 63
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Recon Mgr"
+                ],
+                [
+                    "#value_fkReconManId_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_fkReconManId_1\"]"
+                ],
+                [
+                    "pierce/#value_fkReconManId_1"
+                ]
+            ],
+            "offsetY": 15.8125,
+            "offsetX": 78.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Job Status *"
+                ],
+                [
+                    "#value_JobStatus_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_JobStatus_1\"]"
+                ],
+                [
+                    "pierce/#value_JobStatus_1"
+                ]
+            ],
+            "offsetY": 15.8125,
+            "offsetX": 61.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Claim#[role=\"textbox\"]"
+                ],
+                [
+                    "#value_InsClaimNo_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_InsClaimNo_1\"]"
+                ],
+                [
+                    "pierce/#value_InsClaimNo_1"
+                ]
+            ],
+            "offsetY": 16.8125,
+            "offsetX": 47.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Adjuster Type"
+                ],
+                [
+                    "#value_Adjuster1Type_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Adjuster1Type_1\"]"
+                ],
+                [
+                    "pierce/#value_Adjuster1Type_1"
+                ]
+            ],
+            "offsetY": 12.8125,
+            "offsetX": 129
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Adjuster Company"
+                ],
+                [
+                    "#value_Adjuster1_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Adjuster1_1\"]"
+                ],
+                [
+                    "pierce/#value_Adjuster1_1"
+                ]
+            ],
+            "offsetY": 12.8125,
+            "offsetX": 38.859375
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Adjuster Name"
+                ],
+                [
+                    "#value_Adjuster1Contact_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Adjuster1Contact_1\"]"
+                ],
+                [
+                    "pierce/#value_Adjuster1Contact_1"
+                ]
+            ],
+            "offsetY": 19.8125,
+            "offsetX": 77.09375
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Adjuster2 Type"
+                ],
+                [
+                    "#value_Adjuster2Type_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Adjuster2Type_1\"]"
+                ],
+                [
+                    "pierce/#value_Adjuster2Type_1"
+                ]
+            ],
+            "offsetY": 9.8125,
+            "offsetX": 68
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Adjuster2 Company"
+                ],
+                [
+                    "#value_Adjuster2_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Adjuster2_1\"]"
+                ],
+                [
+                    "pierce/#value_Adjuster2_1"
+                ]
+            ],
+            "offsetY": 10.8125,
+            "offsetX": 24.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Adjuster2 Name"
+                ],
+                [
+                    "#value_Adjuster2Contact_1"
+                ],
+                [
+                    "xpath///*[@id=\"value_Adjuster2Contact_1\"]"
+                ],
+                [
+                    "pierce/#value_Adjuster2Contact_1"
+                ]
+            ],
+            "offsetY": 13.8125,
+            "offsetX": 35.8125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/Please select",
+                    "aria/[role=\"combobox\"]"
+                ],
+                [
+                    "#value_AddLocation_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_AddLocation_10\"]"
+                ],
+                [
+                    "pierce/#value_AddLocation_10"
+                ]
+            ],
+            "offsetY": 12.8125,
+            "offsetX": 81.75
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "#value_Address1_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_Address1_10\"]"
+                ],
+                [
+                    "pierce/#value_Address1_10"
+                ]
+            ],
+            "offsetY": 16.8125,
+            "offsetX": 63.140625
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "#value_Address2_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_Address2_10\"]"
+                ],
+                [
+                    "pierce/#value_Address2_10"
+                ]
+            ],
+            "offsetY": 8.8125,
+            "offsetX": 50.828125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "#value_City_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_City_10\"]"
+                ],
+                [
+                    "pierce/#value_City_10"
+                ]
+            ],
+            "offsetY": 10.8125,
+            "offsetX": 39.828125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "#value_State_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_State_10\"]"
+                ],
+                [
+                    "pierce/#value_State_10"
+                ]
+            ],
+            "offsetY": 10.8125,
+            "offsetX": 55.828125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "#value_Zip_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_Zip_10\"]"
+                ],
+                [
+                    "pierce/#value_Zip_10"
+                ]
+            ],
+            "offsetY": 17.8125,
+            "offsetX": 47.828125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "#value_YearBuilt_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_YearBuilt_10\"]"
+                ],
+                [
+                    "pierce/#value_YearBuilt_10"
+                ]
+            ],
+            "offsetY": 8.8125,
+            "offsetX": 34.828125
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/[role=\"table\"]",
+                    "aria/[role=\"checkbox\"]"
+                ],
+                [
+                    "#value_BillAddress_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_BillAddress_10\"]"
+                ],
+                [
+                    "pierce/#value_BillAddress_10"
+                ]
+            ],
+            "offsetY": 3.8125,
+            "offsetX": 2.140625
+        },
+        {
+            "type": "click",
+            "target": "main",
+            "selectors": [
+                [
+                    "aria/[role=\"table\"]",
+                    "aria/[role=\"checkbox\"]"
+                ],
+                [
+                    "#value_BillAddress_10"
+                ],
+                [
+                    "xpath///*[@id=\"value_BillAddress_10\"]"
+                ],
+                [
+                    "pierce/#value_BillAddress_10"
+                ]
+            ],
+            "offsetY": 7.8125,
+            "offsetX": 10.265625
+        }
+    ]
+}

@@ -7,7 +7,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://*.servpronet.io/*"
+    "https://*.servpronet.io/*",
+    "https://teamallenssm.com/*"
   ],
   "content_scripts": [
     {
@@ -18,7 +19,8 @@
         "src/lib/selectors.js",
         "src/lib/kendoHelpers.js",
         "src/ui/panel.js",
-        "src/content/topPage.js"
+        "src/content/topPage.js",
+        "src/content/workcenterScraper.js"
       ],
       "run_at": "document_idle"
     },
@@ -32,6 +34,16 @@
         "src/lib/kendoHelpers.js",
         "src/ui/panel.js",
         "src/content/docsFrame.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://teamallenssm.com/*"
+      ],
+      "js": [
+        "src/lib/selectors.js",
+        "src/content/teamallenssmFill.js"
       ],
       "run_at": "document_idle"
     }

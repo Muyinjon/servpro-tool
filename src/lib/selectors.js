@@ -198,6 +198,49 @@
     }
   };
 
+  const WORKCENTER_IMPORT = {
+    storageKey: "servproUploadHelper.workcenterPayload",
+    historyKey: "servproUploadHelper.workcenterPayloadHistory",
+    reconToggleKey: "servproUploadHelper.applyReconDefaults",
+    maxHistory: 5,
+    staleHours: 24,
+    teamallenssmAddUrl: "https://teamallenssm.com/jobs1_add.php?",
+    franchiseToBusinessUnit: {
+      "northwest brooklyn": "NW Brooklyn",
+      "northern staten island": "Staten Island",
+      "the rockaways, coney island": "Rockaways/Coney",
+      "forest hills/ridgewood": "Forest Hills",
+      "bay ridge": "Bay Ridge",
+      "mill basin, flatlands": "Mill Basin"
+    },
+    reconDefaults: {
+      coordinator: "Johnny Turobov",
+      reconManager: "Amit Persaud"
+    }
+  };
+
+  const TEAMALLENSSM_FIELD_MAP = {
+    customerName: "value_Customer_1",
+    businessName: "value_Business_1",
+    primaryPhone: "value_PhonePrimary_1",
+    secondaryPhone: "value_PhoneAlternate_1",
+    email: "value_EMail_1",
+    propertyType: "value_Commercial_1",
+    payType: "value_fkJobType_1",
+    businessUnit: "value_BusinessUnit_1",
+    claimNumber: "value_InsClaimNo_1",
+    address1: "value_Address1_",
+    address2: "value_Address2_",
+    city: "value_City_",
+    state: "value_State_",
+    zip: "value_Zip_",
+    yearBuilt: "value_YearBuilt_",
+    coordinator: "value_Coordinator_1",
+    reconManager: "value_fkReconManId_1",
+    insuranceCarrier: "value_InsuranceCompany_1",
+    lossType: "value_fkLossType_1"
+  };
+
   function normalizeText(value) {
     return String(value || "")
       .replace(/\s+/g, " ")
@@ -215,6 +258,8 @@
     MISC_DOCUMENT_TYPES,
     SELECTORS,
     FLOWS,
+    WORKCENTER_IMPORT,
+    TEAMALLENSSM_FIELD_MAP,
     normalizeText,
     looksLikeFileName
   };
