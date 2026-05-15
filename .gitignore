@@ -1,11 +1,15 @@
 # OS / editor
 .DS_Store
 Thumbs.db
+desktop.ini
 *.swp
 *.swo
 .idea/
 .vscode/
 *.log
+
+# Build / packaging
+*.zip
 
 # Dependencies (if added later)
 node_modules/
@@ -18,5 +22,5 @@ node_modules/
 # Examples: ignore large saved-page HTML and local automation dumps.
 # Keep small field-mapping references in the repo.
 examples/*
-examples/workcenter-field.html
-examples/commerical-residential.html
+!examples/workcenter-field.html
+!examples/commerical-residential.html

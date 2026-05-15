@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Servpro Tools",
-  "description": "Tools for Servpro WorkCenter.",
-  "version": "0.2.1",
+  "name": "ServPro Helper - WorkCenter Help",
+  "description": "Helper tools for Servpro WorkCenter uploads.",
+  "version": "0.2.0",
+  "icons": {
+    "16": "favicon-16x16.png",
+    "32": "favicon-32x32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
   "permissions": [
     "storage"
   ],
