@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Servpro Tools",
   "description": "Tools for Servpro WorkCenter.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "permissions": [
     "storage"
   ],
@@ -16,9 +16,11 @@
         "https://*.servpronet.io/*"
       ],
       "js": [
+        "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
         "src/lib/kendoHelpers.js",
         "src/ui/panel.js",
+        "src/ui/importPayloadPanel.js",
         "src/content/topPage.js",
         "src/content/workcenterScraper.js"
       ],
@@ -42,7 +44,9 @@
         "https://teamallenssm.com/*"
       ],
       "js": [
+        "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
+        "src/ui/importPayloadPanel.js",
         "src/content/teamallenssmFill.js"
       ],
       "run_at": "document_idle"

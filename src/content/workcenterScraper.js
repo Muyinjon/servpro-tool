@@ -1,10 +1,30 @@
 (function initWorkcenterScraper(global) {
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
   const selectorsApi = root.selectors;
+  const fieldsApi = root.workcenterFields || {};
 
   if (!selectorsApi || global !== global.top) {
     return;
   }
+
+  const parseAddress = fieldsApi.parseAddress || function noop() {
+    return { address1: "", city: "", state: "", zip: "", country: "" };
+  };
+  const isFullAddressLine = fieldsApi.isFullAddressLine || function noop() {
+    return false;
+  };
+  const mapAddLocationForTeamAllen = fieldsApi.mapAddLocationForTeamAllen || function noop() {
+    return "";
+  };
+  const stripParenthetical = fieldsApi.stripParenthetical || function noop(value) {
+    return String(value || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+  };
+  const isPlausibleBusinessName = fieldsApi.isPlausibleBusinessName || selectorsApi.isPlausibleBusinessName || function always(value) {
+    return Boolean(normalizeText(value));
+  };
+  const isPlausibleClaimNumber = fieldsApi.isPlausibleClaimNumber || selectorsApi.isPlausibleClaimNumber || function always(value) {
+    return Boolean(normalizeText(value));
+  };
 
   function getStorage() {
     return global.chrome && global.chrome.storage && global.chrome.storage.local
@@ -13,7 +33,7 @@
   }
 
   function normalizeText(value) {
-    return String(value || "").replace(/\s+/g, " ").trim();
+    return String(value || "").replace(/[\u00a0\s]+/g, " ").trim();
   }
 
   function normalizeKey(value) {
@@ -31,6 +51,71 @@
     return normalizeText(node ? node.textContent : "");
   }
 
+  function byIdValue(id) {
+    const node = document.getElementById(id);
+    if (!node) {
+      return "";
+    }
+    if (node.tagName === "INPUT" || node.tagName === "TEXTAREA" || node.tagName === "SELECT") {
+      return normalizeText(node.value);
+    }
+    return normalizeText(node.textContent);
+  }
+
+  function selectSelectedText(id) {
+    const select = document.getElementById(id);
+    if (!select || select.tagName !== "SELECT") {
+      return "";
+    }
+    const option = select.options[select.selectedIndex];
+    return normalizeText(option ? option.textContent : "");
+  }
+
+  function selectSelectedAbbrev(id) {
+    const select = document.getElementById(id);
+    if (!select || select.tagName !== "SELECT") {
+      return "";
+    }
+    const option = select.options[select.selectedIndex];
+    if (!option) {
+      return "";
+    }
+    const abbrev = normalizeText(option.textContent);
+    if (abbrev && abbrev.length <= 4) {
+      return abbrev;
+    }
+    return normalizeText(option.value);
+  }
+
+  function extractEmailFromLink(elementId) {
+    const link = document.getElementById(elementId);
+    if (!link) {
+      return "";
+    }
+    const text = normalizeText(link.textContent);
+    if (text) {
+      return text;
+    }
+    const href = String(link.getAttribute("href") || "");
+    const match = href.match(/[?&]e=([^&]+)/i);
+    if (match && match[1]) {
+      try {
+        return normalizeText(decodeURIComponent(match[1]).replace(/\+/g, " "));
+      } catch (error) {
+        return normalizeText(match[1]);
+      }
+    }
+    return "";
+  }
+
+  function extractEmail() {
+    return extractEmailFromLink("MainContent_JobInfoHeader1_link_emailAddress");
+  }
+
+  function extractSecondaryEmail() {
+    return extractEmailFromLink("MainContent_JobInfoHeader1_link_SecondaryContactEmail");
+  }
+
   function getBodyLines() {
     return String(document.body ? document.body.innerText : "")
       .split(/\r?\n/)
@@ -40,12 +125,15 @@
       .filter(Boolean);
   }
 
-  function extractByLabel(labels) {
+  function extractByLabel(labels, options) {
+    const opts = options || {};
     const lines = getBodyLines();
     const labelList = Array.isArray(labels) ? labels : [labels];
     for (const label of labelList) {
       const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const inlineRegex = new RegExp("^" + escaped + "\\s*:?\\s*(.+)$", "i");
+      const inlineRegex = opts.requireColon
+        ? new RegExp("^" + escaped + "\\s*:\\s*(.+)$", "i")
+        : new RegExp("^" + escaped + "\\s*:?\\s*(.+)$", "i");
       const soloRegex = new RegExp("^" + escaped + "\\s*:?\\s*$", "i");
       for (let index = 0; index < lines.length; index += 1) {
         const line = lines[index];
@@ -53,24 +141,85 @@
         if (inlineMatch && inlineMatch[1]) {
           return normalizeText(inlineMatch[1]);
         }
-        if (soloRegex.test(line) && lines[index + 1]) {
-          return normalizeText(lines[index + 1]);
+        if (!opts.inlineOnly && soloRegex.test(line) && lines[index + 1]) {
+          const nextValue = normalizeText(lines[index + 1]);
+          if (!opts.validateValue || opts.validateValue(nextValue)) {
+            return nextValue;
+          }
         }
       }
     }
     return "";
   }
 
-  function extractClaimNumber() {
-    const labelValue = extractByLabel("Claim Number");
-    if (labelValue) {
-      return labelValue;
+  function extractExplicitBusinessName() {
+    const labels = ["Business Name", "Company Name"];
+    for (let index = 0; index < labels.length; index += 1) {
+      const value = extractByLabel(labels[index], {
+        requireColon: true,
+        inlineOnly: true,
+        validateValue: isPlausibleBusinessName
+      });
+      if (isPlausibleBusinessName(value)) {
+        return value;
+      }
     }
+    return "";
+  }
+
+  function pickCommercialBusinessName(explicitBusiness, projectName, primaryContactName) {
+    const candidates = [explicitBusiness, primaryContactName, projectName];
+    for (let index = 0; index < candidates.length; index += 1) {
+      const sanitized = sanitizeBusinessName(candidates[index]);
+      if (sanitized) {
+        return sanitized;
+      }
+    }
+    return "";
+  }
+
+  function sanitizeBusinessName(value) {
+    const text = normalizeText(value);
+    if (!isPlausibleBusinessName(text)) {
+      return "";
+    }
+    return text;
+  }
+
+  function sanitizeClaimNumber(value) {
+    const text = normalizeText(value).replace(/\s+/g, "");
+    if (!isPlausibleClaimNumber(text)) {
+      return "";
+    }
+    return text;
+  }
+
+  function extractClaimNumber() {
+    const sources = [
+      byIdText("MainContent_JobInfoHeader1_lblJobLotBlock"),
+      byIdValue("MainContent_txt_LotBlock"),
+      extractByLabel("Claim Number", {
+        requireColon: true,
+        inlineOnly: true,
+        validateValue: isPlausibleClaimNumber
+      })
+    ];
+
+    for (let index = 0; index < sources.length; index += 1) {
+      const sanitized = sanitizeClaimNumber(sources[index]);
+      if (sanitized) {
+        return sanitized;
+      }
+    }
+
     const lines = getBodyLines();
     for (const line of lines) {
-      const match = line.match(/claim number\s*:\s*([A-Z0-9-]+)/i);
+      const match = line.match(/claim number\s*:\s*([A-Za-z0-9-]+)/i);
       if (match && match[1]) {
-        return normalizeText(match[1]);
+        const sanitized = sanitizeClaimNumber(match[1]);
+        if (sanitized) {
+          return sanitized;
+        }
       }
     }
     return "";
@@ -92,8 +241,7 @@
 
     let namePart = contact
       .replace(/,\s*point of contact/gi, "")
-      .replace(/\bmain\b/gi, "")
-      .replace(/\bmobile\b/gi, "");
+      .replace(/\b(mobile|main|home|work|office|other|cell)\b/gi, "");
     if (phoneMatch) {
       namePart = namePart.replace(phoneMatch[0], " ");
     }
@@ -107,33 +255,6 @@
       primaryPhone: phoneMatch ? phoneMatch.slice(1).join("") : "",
       email: emailMatch ? normalizeText(emailMatch[0]) : "",
       contactRaw: contact
-    };
-  }
-
-  function parseAddress(fullAddress) {
-    const raw = normalizeText(fullAddress);
-    if (!raw) {
-      return {
-        address1: "",
-        city: "",
-        state: "",
-        zip: "",
-        country: ""
-      };
-    }
-    const parts = raw.split(",").map(function trimPart(part) {
-      return normalizeText(part);
-    });
-    const address1 = parts[0] || "";
-    const city = parts[1] || "";
-    const stateZipCountry = parts.slice(2).join(" ");
-    const match = stateZipCountry.match(/([A-Z]{2})\s+(\d{5}(?:-\d{4})?)\s*(.*)$/i);
-    return {
-      address1,
-      city,
-      state: match ? normalizeText(match[1]) : "",
-      zip: match ? normalizeText(match[2]) : "",
-      country: match ? normalizeText(match[3]) : ""
     };
   }
 
@@ -154,6 +275,16 @@
     return normalized.indexOf("commercial") !== -1;
   }
 
+  function detectCommercialFromDOM(primaryParsed, secondaryContactRaw) {
+    if (secondaryContactRaw && /point of contact/i.test(secondaryContactRaw)) {
+      return true;
+    }
+    if (primaryParsed.contactRaw && !primaryParsed.primaryPhone) {
+      return true;
+    }
+    return false;
+  }
+
   function looksWeakContactName(name) {
     const normalized = normalizeKey(name);
     if (!normalized) {
@@ -163,6 +294,14 @@
       return true;
     }
     return normalized.length < 3;
+  }
+
+  function resolveAddress1(domAddress1, parsedAddress) {
+    const dom = normalizeText(domAddress1);
+    if (dom && !isFullAddressLine(dom)) {
+      return dom;
+    }
+    return parsedAddress.address1 || dom;
   }
 
   function isWorkcenterPage() {
@@ -182,80 +321,129 @@
       byIdText("MainContent_JobInfoHeader1_lblJobName"),
       extractByLabel("Project Name")
     ]);
-    const primaryContactNode = byIdText("MainContent_JobInfoHeader1_txt_PrimaryContact");
-    const secondaryContactNode = byIdText("MainContent_JobInfoHeader1_txt_SecondaryContact");
-    const parsedContact = extractContactParts(secondaryContactNode);
-    const emailNode = byIdText("MainContent_JobInfoHeader1_link_emailAddress");
-    const claimNumber = extractClaimNumber();
-    const franchiseName = byIdText("MainContent_JobInfoHeader1_lblJobSite");
-    const propertyType = extractByLabel("Property Type");
+    const primaryContactRaw = byIdText("MainContent_JobInfoHeader1_txt_PrimaryContact");
+    const secondaryContactRaw = byIdText("MainContent_JobInfoHeader1_txt_SecondaryContact");
+    const primaryParsed = extractContactParts(primaryContactRaw);
+    const secondaryParsed = extractContactParts(secondaryContactRaw);
+
+    const propertyType = firstNonEmpty([
+      selectSelectedText("MainContent_cmb_JobType"),
+      extractByLabel("Property Type")
+    ]);
 
     const fullAddressNode = document.getElementById("MainContent_JobInfoHeader1_txt_FullAddress");
     const fullAddress = normalizeText(fullAddressNode ? fullAddressNode.textContent : extractByLabel("Address"));
     const parsedAddress = parseAddress(fullAddress);
 
+    const domAddress1 = byIdValue("MainContent_txt_Address1");
+    const address1 = resolveAddress1(domAddress1, parsedAddress);
+    const address2 = firstNonEmpty([
+      byIdValue("MainContent_txt_Unit"),
+      byIdValue("MainContent_txt_Bldg"),
+      extractByLabel(["Unit", "Address 2", "Apartment"])
+    ]);
+    const city = firstNonEmpty([
+      byIdValue("MainContent_txt_City"),
+      extractByLabel("City"),
+      parsedAddress.city
+    ]);
+    const state = firstNonEmpty([
+      selectSelectedAbbrev("MainContent_cmb_StateCD"),
+      extractByLabel("State/Province"),
+      parsedAddress.state
+    ]);
+    const zip = firstNonEmpty([
+      byIdValue("MainContent_txt_Zip"),
+      extractByLabel(["ZIP/Postal", "Zip/Postal Code", "Zip"]),
+      parsedAddress.zip
+    ]);
+
     const insuranceRaw = firstNonEmpty([
+      byIdValue("ctl00_MainContent_cmb_Project_Input"),
       extractByLabel("Insurance Carrier"),
       extractByLabel("Insurance Company")
     ]);
+    const claimNumber = extractClaimNumber();
 
-    const parsedCustomer = firstNonEmpty([
-      parsedContact.customerName,
-      extractByLabel(["Customer", "Primary Contact", "Contact Name"]),
-      primaryContactNode
-    ]);
-    const explicitBusiness = firstNonEmpty([
-      extractByLabel(["Business", "Business Name", "Company Name"]),
-      primaryContactNode
-    ]);
+    const explicitBusiness = extractExplicitBusinessName();
+    const isCommercial = isCommercialProperty(propertyType) ||
+      detectCommercialFromDOM(primaryParsed, secondaryContactRaw);
 
-    let customerName = parsedCustomer;
-    let businessName = explicitBusiness;
+    let customerName = "";
+    let businessName = "";
+    let primaryPhone = "";
+    let secondaryPhone = "";
+    let email = "";
 
-    if (isCommercialProperty(propertyType)) {
-      businessName = firstNonEmpty([projectName, explicitBusiness, parsedCustomer]);
-      customerName = firstNonEmpty([parsedCustomer, projectName, businessName]);
+    if (isCommercial) {
+      businessName = sanitizeBusinessName(firstNonEmpty([
+        explicitBusiness,
+        primaryParsed.customerName,
+        projectName
+      ]));
+      customerName = secondaryParsed.customerName;
+      primaryPhone = secondaryParsed.primaryPhone;
+      secondaryPhone = "";
+      email = firstNonEmpty([
+        extractSecondaryEmail(),
+        extractEmail(),
+        secondaryParsed.email
+      ]);
     } else {
-      customerName = looksWeakContactName(parsedCustomer)
-        ? firstNonEmpty([projectName, parsedCustomer, explicitBusiness])
-        : parsedCustomer;
-      businessName = firstNonEmpty([explicitBusiness, customerName, projectName]);
+      customerName = looksWeakContactName(primaryParsed.customerName)
+        ? firstNonEmpty([projectName, primaryParsed.customerName])
+        : primaryParsed.customerName;
+      businessName = sanitizeBusinessName(explicitBusiness);
+      primaryPhone = primaryParsed.primaryPhone;
+      secondaryPhone = "";
+      email = firstNonEmpty([
+        extractEmail(),
+        primaryParsed.email
+      ]);
     }
+
+    const coordinatorRaw = byIdValue("ctl00_MainContent_cmb_Staff5_Input");
+    const addLocation = mapAddLocationForTeamAllen(propertyType);
 
     return {
       projectName,
       projectId: extractByLabel("Project ID"),
       projectProgress: extractByLabel("Project Progress"),
-      lossType: extractByLabel("Loss Type"),
-      causeOfLoss: extractByLabel(["Cause of Loss", "Cause of Loss Type"]),
+      lossType: firstNonEmpty([
+        byIdText("MainContent_JobInfoHeader1_snap_ListType"),
+        extractByLabel("Loss Type")
+      ]),
+      causeOfLoss: firstNonEmpty([
+        byIdText("MainContent_JobInfoHeader1_snap_CauseOfLoss"),
+        extractByLabel(["Cause of Loss", "Cause of Loss Type"])
+      ]),
       claimNumber,
       customerName,
       businessName,
-      primaryPhone: firstNonEmpty([
-        parsedContact.primaryPhone,
-        extractByLabel(["Phone 1", "Primary Phone", "Phone"])
-      ]).replace(/\D+/g, ""),
-      secondaryPhone: extractByLabel(["Phone 2", "Secondary Phone"]).replace(/\D+/g, ""),
-      email: firstNonEmpty([
-        parsedContact.email,
-        emailNode,
-        extractByLabel("Email"),
-        extractByLabel("EMail")
+      primaryPhone: primaryPhone.replace(/\D+/g, ""),
+      secondaryPhone: secondaryPhone.replace(/\D+/g, ""),
+      email,
+      address1,
+      address2,
+      city,
+      state,
+      zip,
+      yearBuilt: firstNonEmpty([
+        byIdValue("MainContent_txt_YearHouseBuilt"),
+        extractByLabel(["Year Built", "YearBuilt"])
       ]),
-      address1: firstNonEmpty([extractByLabel("Address"), parsedAddress.address1]),
-      address2: extractByLabel(["Address 2", "Unit", "Apartment"]),
-      city: firstNonEmpty([extractByLabel("City"), parsedAddress.city]),
-      state: firstNonEmpty([extractByLabel("State/Province"), parsedAddress.state]),
-      zip: firstNonEmpty([extractByLabel("Zip/Postal Code"), extractByLabel("Zip"), parsedAddress.zip]),
-      yearBuilt: extractByLabel(["Year Built", "YearBuilt"]),
       propertyType,
-      franchiseName,
-      businessUnit: deriveBusinessUnit(franchiseName),
+      franchiseName: byIdText("MainContent_JobInfoHeader1_lblJobSite"),
+      businessUnit: deriveBusinessUnit(byIdText("MainContent_JobInfoHeader1_lblJobSite")),
       country: firstNonEmpty([extractByLabel("Country"), parsedAddress.country]),
       fullAddress,
-      insuranceCarrier: insuranceRaw.replace(/\s*\(.*\)\s*$/, ""),
+      insuranceCarrier: stripParenthetical(insuranceRaw),
       payType: derivePayType(insuranceRaw, claimNumber),
-      contactRaw: parsedContact.contactRaw,
+      policyNumber: byIdValue("jobCustom1"),
+      coordinator: stripParenthetical(coordinatorRaw),
+      addLocation,
+      billAddress: true,
+      contactRaw: secondaryParsed.contactRaw || primaryParsed.contactRaw,
       sourceUrl: global.location.href,
       scrapedAt: new Date().toISOString()
     };
@@ -329,6 +517,17 @@
     });
   }
 
+  function loadLatestPayload(callback) {
+    const storage = getStorage();
+    if (!storage) {
+      callback(null);
+      return;
+    }
+    storage.get([selectorsApi.WORKCENTER_IMPORT.storageKey], function onLoad(result) {
+      callback((result && result[selectorsApi.WORKCENTER_IMPORT.storageKey]) || null);
+    });
+  }
+
   function getBusinessUnitWarning(payload) {
     if (!normalizeText(payload.franchiseName)) {
       return "";
@@ -339,15 +538,20 @@
     return "";
   }
 
-  function exportPayload(payload) {
-    const json = JSON.stringify(payload, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+  function exportPayloadFromText(text) {
+    const blob = new Blob([text], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const safeProject = (payload.projectId || payload.projectName || "workcenter")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    let safeProject = "workcenter";
+    try {
+      const parsed = JSON.parse(text);
+      safeProject = (parsed.projectId || parsed.projectName || "workcenter")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    } catch (error) {
+      safeProject = "workcenter";
+    }
     link.href = url;
     link.download = safeProject + "-workcenter.json";
     document.body.appendChild(link);
@@ -358,38 +562,15 @@
     }, 1000);
   }
 
-  function copyPayload(payload, callback) {
-    const text = JSON.stringify(payload, null, 2);
-    const nav = global.navigator;
-    if (nav && nav.clipboard && typeof nav.clipboard.writeText === "function") {
-      nav.clipboard.writeText(text).then(function ok() {
-        callback(true);
-      }).catch(function fail() {
-        callback(false);
-      });
-      return;
-    }
-
-    const area = document.createElement("textarea");
-    area.value = text;
-    area.style.position = "fixed";
-    area.style.left = "-9999px";
-    document.body.appendChild(area);
-    area.select();
-    let copied = false;
-    try {
-      copied = document.execCommand("copy");
-    } catch (error) {
-      copied = false;
-    }
-    area.remove();
-    callback(copied);
-  }
-
   function createPanel() {
     if (document.getElementById("servpro-workcenter-helper-panel")) {
       return;
     }
+
+    const payloadPanelApi = root.importPayloadPanel;
+    let latestPayload = null;
+    let lastScrapedPayload = null;
+    let jsonEditor = null;
 
     const panel = document.createElement("div");
     panel.id = "servpro-workcenter-helper-panel";
@@ -403,7 +584,9 @@
       "border-radius:8px",
       "padding:10px",
       "box-shadow:0 2px 12px rgba(0,0,0,.2)",
-      "width:340px",
+      "width:420px",
+      "max-height:90vh",
+      "overflow:auto",
       "font:13px/1.4 Arial,sans-serif"
     ].join(";");
 
@@ -425,15 +608,11 @@
     exportButton.type = "button";
     exportButton.textContent = "Export JSON";
 
-    const copyButton = document.createElement("button");
-    copyButton.type = "button";
-    copyButton.textContent = "Copy JSON";
-
     const autofillButton = document.createElement("button");
     autofillButton.type = "button";
     autofillButton.textContent = "Autofill TeamAllenssm";
 
-    [scrapeButton, exportButton, copyButton, autofillButton].forEach(function styleButton(btn) {
+    [scrapeButton, exportButton, autofillButton].forEach(function styleButton(btn) {
       btn.style.cssText = "border:1px solid #1976d2;background:#1976d2;color:#fff;border-radius:6px;padding:6px 8px;cursor:pointer;";
     });
 
@@ -443,12 +622,18 @@
     status.style.color = "#334e68";
     status.textContent = "Ready";
 
-    let latestPayload = null;
+    function updateEditor(payload, expand) {
+      if (jsonEditor) {
+        jsonEditor.setPayload(payload, { expand: Boolean(expand) });
+      }
+    }
 
     function scrapeAndStore(callback) {
       latestPayload = buildPayload();
+      lastScrapedPayload = latestPayload;
       savePayload(latestPayload, function onSave(ok, historyCount) {
         const count = countFilledCoreFields(latestPayload);
+        updateEditor(latestPayload, true);
         setStatus(
           ok
             ? "Scraped and saved (" + count + "/9 key fields). History: " + historyCount + "/5." + getBusinessUnitWarning(latestPayload)
@@ -460,32 +645,60 @@
       });
     }
 
+    if (payloadPanelApi) {
+      jsonEditor = payloadPanelApi.createImportPayloadPanel({
+        getBaselinePayload: function getBaseline() {
+          return lastScrapedPayload || latestPayload;
+        },
+        onStatus: setStatus,
+        onSave: function onSavePayload(payload, done) {
+          latestPayload = payload;
+          savePayload(payload, function onSaved(ok, historyCount) {
+            done(ok, ok ? "Payload saved. History: " + historyCount + "/5." : "Failed to save payload.");
+          });
+        }
+      });
+    }
+
     scrapeButton.addEventListener("click", function onScrape() {
       scrapeAndStore();
     });
 
     exportButton.addEventListener("click", function onExport() {
-      if (!latestPayload) {
-        latestPayload = buildPayload();
-      }
-      savePayload(latestPayload, function onSave(ok, historyCount) {
-        exportPayload(latestPayload);
-        setStatus("Exported JSON file. History: " + historyCount + "/5.");
-      });
-    });
-
-    copyButton.addEventListener("click", function onCopy() {
-      if (!latestPayload) {
-        latestPayload = buildPayload();
-      }
-      savePayload(latestPayload, function onSave(ok, historyCount) {
-        copyPayload(latestPayload, function onCopied(copied) {
-          setStatus((copied ? "Copied JSON to clipboard." : "Clipboard copy failed.") + " History: " + historyCount + "/5.");
+      const text = jsonEditor ? jsonEditor.getText() : "";
+      if (!normalizeText(text)) {
+        if (!latestPayload) {
+          latestPayload = buildPayload();
+        }
+        savePayload(latestPayload, function onSave() {
+          exportPayloadFromText(root.importPayloadPanel.formatPayload(latestPayload));
+          setStatus("Exported JSON file.");
         });
-      });
+        return;
+      }
+      const parsed = payloadPanelApi ? payloadPanelApi.parsePayloadText(text) : { ok: false };
+      if (parsed.ok) {
+        savePayload(parsed.payload, function onSave() {
+          latestPayload = parsed.payload;
+          exportPayloadFromText(text);
+          setStatus("Exported JSON file.");
+        });
+      } else {
+        exportPayloadFromText(text);
+        setStatus("Exported JSON file (not saved — invalid JSON).");
+      }
     });
 
     autofillButton.addEventListener("click", function onAutofill() {
+      const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+      if (editorParsed.ok) {
+        latestPayload = editorParsed.payload;
+        savePayload(latestPayload, function onSave(ok, historyCount) {
+          global.open(selectorsApi.WORKCENTER_IMPORT.teamallenssmAddUrl, "_blank");
+          setStatus("Opened TeamAllenssm. History: " + historyCount + "/5.");
+        });
+        return;
+      }
       if (!latestPayload) {
         latestPayload = buildPayload();
       }
@@ -497,17 +710,25 @@
 
     buttonBar.appendChild(scrapeButton);
     buttonBar.appendChild(exportButton);
-    buttonBar.appendChild(copyButton);
     buttonBar.appendChild(autofillButton);
     panel.appendChild(title);
     panel.appendChild(buttonBar);
     panel.appendChild(status);
+    if (jsonEditor) {
+      panel.appendChild(jsonEditor.element);
+    }
     document.body.appendChild(panel);
 
-    getHistoryCount(function onCount(historyCount) {
-      if (historyCount > 0) {
-        setStatus("Ready. History: " + historyCount + "/5.");
+    loadLatestPayload(function onLoad(payload) {
+      if (payload) {
+        latestPayload = payload;
+        updateEditor(payload, false);
       }
+      getHistoryCount(function onCount(historyCount) {
+        if (historyCount > 0) {
+          setStatus("Ready. History: " + historyCount + "/5. Open JSON to review or edit.");
+        }
+      });
     });
   }
 

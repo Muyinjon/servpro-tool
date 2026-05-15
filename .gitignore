@@ -1,0 +1,22 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.log
+
+# Dependencies (if added later)
+node_modules/
+
+# Secrets
+.env
+.env.*
+*.pem
+
+# Examples: ignore large saved-page HTML and local automation dumps.
+# Keep small field-mapping references in the repo.
+examples/*
+examples/workcenter-field.html
+examples/commerical-residential.html

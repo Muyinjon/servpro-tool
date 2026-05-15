@@ -216,30 +216,11 @@
     reconDefaults: {
       coordinator: "Johnny Turobov",
       reconManager: "Amit Persaud"
-    }
+    },
   };
 
-  const TEAMALLENSSM_FIELD_MAP = {
-    customerName: "value_Customer_1",
-    businessName: "value_Business_1",
-    primaryPhone: "value_PhonePrimary_1",
-    secondaryPhone: "value_PhoneAlternate_1",
-    email: "value_EMail_1",
-    propertyType: "value_Commercial_1",
-    payType: "value_fkJobType_1",
-    businessUnit: "value_BusinessUnit_1",
-    claimNumber: "value_InsClaimNo_1",
-    address1: "value_Address1_",
-    address2: "value_Address2_",
-    city: "value_City_",
-    state: "value_State_",
-    zip: "value_Zip_",
-    yearBuilt: "value_YearBuilt_",
-    coordinator: "value_Coordinator_1",
-    reconManager: "value_fkReconManId_1",
-    insuranceCarrier: "value_InsuranceCompany_1",
-    lossType: "value_fkLossType_1"
-  };
+  const fieldsApi = root.workcenterFields || {};
+  const TEAMALLENSSM_FIELD_MAP = fieldsApi.TEAMALLENSSM_FIELD_MAP || {};
 
   function normalizeText(value) {
     return String(value || "")
@@ -260,6 +241,15 @@
     FLOWS,
     WORKCENTER_IMPORT,
     TEAMALLENSSM_FIELD_MAP,
+    WORKCENTER_SELECTORS: fieldsApi.WORKCENTER_SELECTORS,
+    LOSS_TYPE_ALIASES: fieldsApi.LOSS_TYPE_ALIASES,
+    mapLossTypeForTeamAllen: fieldsApi.mapLossTypeForTeamAllen,
+    mapCoordinatorForTeamAllen: fieldsApi.mapCoordinatorForTeamAllen,
+    mapAddLocationForTeamAllen: fieldsApi.mapAddLocationForTeamAllen,
+    isPlausibleBusinessName: fieldsApi.isPlausibleBusinessName,
+    isPlausibleClaimNumber: fieldsApi.isPlausibleClaimNumber,
+    isFullAddressLine: fieldsApi.isFullAddressLine,
+    parseAddress: fieldsApi.parseAddress,
     normalizeText,
     looksLikeFileName
   };

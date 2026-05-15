@@ -46,46 +46,58 @@ This first version focuses on one workflow:
 
 ## WorkCenter scrape + TeamAllenssm import
 
-This version also adds a cross-page helper for moving core WorkCenter job data into TeamAllenssm.
+Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-based scraping, editable JSON, and expanded autofill.
 
 ### Supported flow
 
 1. Open a WorkCenter project page on `servpronet.io`.
 2. Use the floating **WorkCenter Import Helper**:
-   - `Scrape WorkCenter` saves a normalized payload in local extension storage.
-   - `Export JSON` downloads the payload as a `.json` file for CRM/other tools.
-   - `Copy JSON` copies the payload to clipboard.
-   - `Autofill TeamAllenssm` opens TeamAllenssm new-job page.
-3. On `teamallenssm.com/jobs1_add.php`, use **TeamAllenssm Import Helper**:
-   - Click `Fill from WorkCenter payload`.
-   - Optionally choose a specific record from the last 5 scraped history entries before filling.
-   - Optional: enable `Apply recon defaults` to set Coordinator and Recon Mgr on recon/rebuild jobs.
-   - Review values, then click Save manually.
+   - `Scrape WorkCenter` reads stable field IDs (see `examples/workcenter-field.html`) and saves JSON to extension storage.
+   - Expand **Show payload JSON** to review or edit values, then `Save payload`.
+   - `Copy JSON` (in the JSON panel) copies the current editor text.
+   - `Export JSON` downloads the current editor text as a `.json` file.
+   - `Autofill TeamAllenssm` saves the current payload and opens `teamallenssm.com/jobs1_add.php`.
+3. On the TeamAllen add-job page, use **TeamAllenssm Import Helper**:
+   - Review or edit JSON, then click `Fill from WorkCenter payload`.
+   - Choose a record from the last 5 scraped history entries if needed.
+   - Optional: enable `Apply recon defaults` for rebuild/recon jobs (Coordinator/Recon Mgr).
+   - Review the form and click Save manually.
 
-### Core fields in payload
+### Fields scraped and filled
 
-- Project: name, ID, progress
-- Loss: type, cause, claim number
-- Contact: customer name, phones, email
-- Address: line 1, line 2, city, state, zip, year built, country, full address
-- Classification: property type, franchise name, mapped business unit, pay type
-- Insurance carrier
-- Metadata: source URL and scrape timestamp
+| Payload key | WorkCenter source | TeamAllenssm target |
+|-------------|-------------------|---------------------|
+| `businessUnit` | Franchise header | Bus. Unit |
+| `customerName` | Primary contact (residential) or secondary contact (commercial) | Customer |
+| `businessName` | Project name / primary header (commercial only) | Business |
+| `propertyType` | `MainContent_cmb_JobType` | Type (Residential/Commercial) |
+| `primaryPhone`, `secondaryPhone` | Parsed from contact lines | Phone 1 / Phone 2 |
+| `email` | Email link text or href | EMail |
+| `payType` | Derived from insurance/claim | Pay Type |
+| `insuranceCarrier` | Insurance combobox input | Insurance Company |
+| `lossType` | Header loss type span | Loss Type |
+| `claimNumber` | Header or label | Claim # |
+| `coordinator` | Job File Coord. combobox | Coordinator |
+| `address1`–`zip`, `yearBuilt` | Structured address inputs (not header one-liner) | Customer address grid |
+| `addLocation` | Derived from property type | Add Location (Residence/Commercial) |
+| `billAddress` | Default true | Bill Address checkbox |
+
+Metadata only in JSON (not filled on add form): `projectName`, `projectId`, `projectProgress`, `causeOfLoss`, `policyNumber`, `fullAddress`.
+
+### Commercial vs residential
+
+- **Commercial**: `businessName` = project name or primary header contact; `customerName` = secondary contact person (point of contact).
+- **Residential**: `customerName` = primary contact (falls back to project name if weak); `businessName` stays empty unless WorkCenter has an explicit business label.
+
+### Address handling
+
+- Street/city/state/zip come from `MainContent_txt_*` inputs first; header `txt_FullAddress` is parsed only as fallback.
+- TeamAllen address fields use dynamic IDs (`value_Address1_*`); the filler targets the visible inline-edit row in the address grid.
 
 ### Notes
 
-- Selector logic uses label/value fallbacks so minor markup changes are tolerated.
-- Franchise to Bus.Unit mapping currently includes:
-  - `Northwest Brooklyn` -> `NW Brooklyn`
-  - `Northern Staten Island` -> `Staten Island`
-  - `The Rockaways, Coney Island` -> `Rockaways/Coney`
-  - `Forest Hills/Ridgewood` -> `Forest Hills`
-  - `Bay Ridge` -> `Bay Ridge`
-  - `Mill Basin, Flatlands` -> `Mill Basin`
-- Name logic:
-  - Commercial jobs prefer project name as `businessName`.
-  - Non-commercial jobs can fallback project name to `customerName` when contact name is weak/missing.
-- Claim number is sourced from `Claim Number` with fallback parsing.
-- Autofill maps by TeamAllenssm field IDs and dynamic address prefixes.
-- Dropdown fill uses text matching; if no matching option exists, the helper reports missing fields.
-- Payload history stores last 5 scrapes in extension local storage (most recent first).
+- Franchise to Bus.Unit mapping includes Northwest Brooklyn, Staten Island, Rockaways/Coney, Forest Hills, Bay Ridge, and Mill Basin.
+- Loss type and coordinator values are normalized before dropdown matching (e.g. `Water` → `WATER`, strip franchise suffix from coordinator).
+- Unmapped dropdown options are reported in the status line after fill.
+- Payload history stores the last 5 scrapes in extension local storage.
+- Field maps live in `src/lib/workcenterFields.js`; update `examples/workcenter-field.html` when WorkCenter markup changes.

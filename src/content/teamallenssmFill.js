@@ -1,10 +1,22 @@
 (function initTeamallenssmFill(global) {
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
   const selectorsApi = root.selectors;
+  const fieldsApi = root.workcenterFields || {};
 
   if (!selectorsApi) {
     return;
   }
+
+  const ADDRESS_GRID_PAGE = fieldsApi.ADDRESS_GRID_PAGE || "dbo_sp_jobaddresses_listJob";
+  const mapLossTypeForTeamAllen = selectorsApi.mapLossTypeForTeamAllen || fieldsApi.mapLossTypeForTeamAllen;
+  const mapCoordinatorForTeamAllen = selectorsApi.mapCoordinatorForTeamAllen || fieldsApi.mapCoordinatorForTeamAllen;
+  const mapAddLocationForTeamAllen = selectorsApi.mapAddLocationForTeamAllen || fieldsApi.mapAddLocationForTeamAllen;
+  const isPlausibleBusinessName = fieldsApi.isPlausibleBusinessName || selectorsApi.isPlausibleBusinessName || function always(value) {
+    return Boolean(normalizeText(value));
+  };
+  const isPlausibleClaimNumber = fieldsApi.isPlausibleClaimNumber || selectorsApi.isPlausibleClaimNumber || function always(value) {
+    return Boolean(normalizeText(value));
+  };
 
   function normalizeText(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
@@ -37,14 +49,50 @@
     return true;
   }
 
+  function setCheckboxValue(input, checked) {
+    if (!input) {
+      return false;
+    }
+    input.checked = Boolean(checked);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
   function resolveElementByMapValue(mapValue) {
     if (!mapValue) {
       return null;
     }
     if (mapValue.endsWith("_")) {
-      return document.querySelector('[id^="' + mapValue + '"]');
+      return resolveAddressGridElement(mapValue);
     }
     return document.getElementById(mapValue);
+  }
+
+  function resolveAddressGridElement(prefix) {
+    const rows = Array.from(
+      document.querySelectorAll('tr[data-page="' + ADDRESS_GRID_PAGE + '"][data-record-id]')
+    );
+    const activeRow = rows.find(function isVisible(row) {
+      if (row.getAttribute("data-hidden") !== null && row.getAttribute("data-hidden") !== "") {
+        return false;
+      }
+      const style = global.getComputedStyle(row);
+      return style.display !== "none" && style.visibility !== "hidden";
+    }) || rows[0];
+
+    if (activeRow) {
+      const inRow = activeRow.querySelector('[id^="' + prefix + '"]');
+      if (inRow) {
+        return inRow;
+      }
+    }
+
+    const candidates = Array.from(document.querySelectorAll('[id^="' + prefix + '"]'));
+    return candidates.find(function isVisible(el) {
+      const style = global.getComputedStyle(el);
+      return style.display !== "none" && style.visibility !== "hidden";
+    }) || candidates[0] || null;
   }
 
   function setSelectByText(select, value) {
@@ -87,16 +135,9 @@
     const elapsedMs = Date.now() - scrapedAt;
     const staleMs = selectorsApi.WORKCENTER_IMPORT.staleHours * 60 * 60 * 1000;
     if (elapsedMs > staleMs) {
-      return "Warning: scraped payload is older than " + selectorsApi.WORKCENTER_IMPORT.staleHours + "h.";
+      return " Warning: payload older than " + selectorsApi.WORKCENTER_IMPORT.staleHours + "h.";
     }
     return "";
-  }
-
-  function setStatus(message) {
-    const status = document.querySelector("#servpro-teamallenssm-helper-panel .servpro-teamallenssm-status");
-    if (status) {
-      status.textContent = message;
-    }
   }
 
   function mapPropertyType(sourceValue) {
@@ -110,26 +151,63 @@
     return "";
   }
 
+  function isResidential(payload, propertyTypeMapped) {
+    const key = normalizeKey(propertyTypeMapped || payload.propertyType);
+    return key.indexOf("residential") !== -1;
+  }
+
   function buildSource(payload) {
+    const propertyTypeRaw = firstNonEmpty([payload.propertyType, payload.PropertyType, payload.type]);
+    const propertyTypeMapped = mapPropertyType(propertyTypeRaw);
+    const residential = isResidential(payload, propertyTypeMapped);
+
+    const rawBusinessName = firstNonEmpty([
+      payload.businessName,
+      payload.business,
+      payload.Business
+    ]);
+    const businessName = isPlausibleBusinessName(rawBusinessName) ? rawBusinessName : "";
+
     return {
       customerName: firstNonEmpty([payload.customerName, payload.customer, payload.Customer]),
-      businessName: firstNonEmpty([payload.businessName, payload.business, payload.Business, payload.customerName]),
+      businessName: businessName,
       primaryPhone: firstNonEmpty([payload.primaryPhone, payload.phone1, payload.phone, payload.PhonePrimary]).replace(/\D+/g, ""),
       secondaryPhone: firstNonEmpty([payload.secondaryPhone, payload.phone2, payload.PhoneAlternate]).replace(/\D+/g, ""),
       email: firstNonEmpty([payload.email, payload.EMail, payload.Email]),
       payType: firstNonEmpty([payload.payType, payload.paytype, payload.fkJobType]),
       businessUnit: firstNonEmpty([payload.businessUnit, payload.busUnit, payload.BusinessUnit]),
-      claimNumber: firstNonEmpty([payload.claimNumber, payload.claim, payload.claimNo, payload.InsClaimNo]),
+      claimNumber: (function resolveClaim() {
+        const raw = firstNonEmpty([payload.claimNumber, payload.claim, payload.claimNo, payload.InsClaimNo]);
+        return isPlausibleClaimNumber(raw) ? normalizeText(raw).replace(/\s+/g, "") : "";
+      })(),
       address1: firstNonEmpty([payload.address1, payload.Address1, payload.address]),
       address2: firstNonEmpty([payload.address2, payload.Address2]),
       city: firstNonEmpty([payload.city, payload.City]),
       state: firstNonEmpty([payload.state, payload.State]),
       zip: firstNonEmpty([payload.zip, payload.Zip, payload.zipCode]),
       yearBuilt: firstNonEmpty([payload.yearBuilt, payload.YearBuilt]),
-      propertyType: firstNonEmpty([payload.propertyType, payload.PropertyType, payload.type]),
+      propertyType: propertyTypeMapped,
       insuranceCarrier: firstNonEmpty([payload.insuranceCarrier, payload.InsuranceCompany, payload.insurance]),
-      lossType: firstNonEmpty([payload.lossType, payload.LossType])
+      lossType: firstNonEmpty([payload.lossType, payload.LossType]),
+      coordinator: firstNonEmpty([payload.coordinator, payload.Coordinator]),
+      addLocation: firstNonEmpty([
+        payload.addLocation,
+        mapAddLocationForTeamAllen ? mapAddLocationForTeamAllen(propertyTypeRaw) : ""
+      ]),
+      billAddress: payload.billAddress !== false
     };
+  }
+
+  function formatAddressSummary(source) {
+    const parts = [];
+    if (source.address1) {
+      parts.push(source.address1);
+    }
+    const cityLine = [source.city, source.state, source.zip].filter(Boolean).join(", ");
+    if (cityLine) {
+      parts.push(cityLine);
+    }
+    return parts.join(" | ");
   }
 
   function fillFromPayload(payload, applyReconDefaultsEnabled) {
@@ -151,11 +229,13 @@
     ];
 
     const selectFieldValues = {
-      propertyType: mapPropertyType(source.propertyType),
+      propertyType: source.propertyType,
       payType: source.payType,
       businessUnit: source.businessUnit,
       insuranceCarrier: source.insuranceCarrier,
-      lossType: source.lossType
+      lossType: mapLossTypeForTeamAllen ? mapLossTypeForTeamAllen(source.lossType) : source.lossType,
+      coordinator: mapCoordinatorForTeamAllen ? mapCoordinatorForTeamAllen(source.coordinator) : source.coordinator,
+      addLocation: source.addLocation
     };
 
     if (shouldApplyReconDefaults(source, applyReconDefaultsEnabled)) {
@@ -202,7 +282,20 @@
       }
     });
 
-    return { filled, missing };
+    if (source.billAddress && map.billAddress) {
+      const billCheckbox = resolveElementByMapValue(map.billAddress);
+      if (setCheckboxValue(billCheckbox, true)) {
+        filled += 1;
+      } else {
+        missing.push("billAddress");
+      }
+    }
+
+    return {
+      filled,
+      missing,
+      addressSummary: formatAddressSummary(source)
+    };
   }
 
   function loadPayloads(callback) {
@@ -223,10 +316,42 @@
     });
   }
 
+  function savePayload(payload, callback) {
+    const storage = getStorage();
+    if (!storage) {
+      callback(false);
+      return;
+    }
+    storage.get([selectorsApi.WORKCENTER_IMPORT.historyKey], function onLoad(result) {
+      const history = Array.isArray(result && result[selectorsApi.WORKCENTER_IMPORT.historyKey])
+        ? result[selectorsApi.WORKCENTER_IMPORT.historyKey]
+        : [];
+      const deduped = history.filter(function keep(item) {
+        if (!item || !payload) {
+          return Boolean(item);
+        }
+        if (item.sourceUrl === payload.sourceUrl && item.projectId && item.projectId === payload.projectId) {
+          return false;
+        }
+        return true;
+      });
+      deduped.unshift(payload);
+      storage.set({
+        [selectorsApi.WORKCENTER_IMPORT.storageKey]: payload,
+        [selectorsApi.WORKCENTER_IMPORT.historyKey]: deduped.slice(0, selectorsApi.WORKCENTER_IMPORT.maxHistory || 5)
+      }, function onSaved() {
+        callback(!global.chrome.runtime.lastError);
+      });
+    });
+  }
+
   function createPanel() {
     if (document.getElementById("servpro-teamallenssm-helper-panel")) {
       return;
     }
+
+    const payloadPanelApi = root.importPayloadPanel;
+    let jsonEditor = null;
 
     const panel = document.createElement("div");
     panel.id = "servpro-teamallenssm-helper-panel";
@@ -240,7 +365,9 @@
       "border-radius:8px",
       "padding:10px",
       "box-shadow:0 2px 12px rgba(0,0,0,.2)",
-      "width:340px",
+      "width:420px",
+      "max-height:90vh",
+      "overflow:auto",
       "font:13px/1.4 Arial,sans-serif"
     ].join(";");
 
@@ -280,6 +407,10 @@
 
     let selectedHistoryIndex = -1;
 
+    function setStatus(message) {
+      status.textContent = message;
+    }
+
     function summarizePayload(payload, index) {
       const when = payload && payload.scrapedAt ? new Date(payload.scrapedAt).toLocaleString() : "Unknown time";
       const primary = firstNonEmpty([payload.projectName, payload.customerName, payload.businessName, payload.claimNumber, "Record"]);
@@ -303,6 +434,18 @@
       historySelect.value = selectedHistoryIndex >= 0 ? String(selectedHistoryIndex) : "-1";
     }
 
+    function loadPayloadForEditor(latest, history) {
+      let payload = latest || null;
+      if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
+        payload = history[selectedHistoryIndex];
+      } else if (!payload && history.length) {
+        payload = history[0];
+      }
+      if (jsonEditor && payload) {
+        jsonEditor.setPayload(payload, { expand: false });
+      }
+    }
+
     const storage = getStorage();
     if (storage) {
       storage.get([selectorsApi.WORKCENTER_IMPORT.reconToggleKey], function onToggleLoad(result) {
@@ -316,14 +459,35 @@
     historySelect.addEventListener("change", function onHistoryChanged() {
       const parsed = Number(historySelect.value);
       selectedHistoryIndex = Number.isNaN(parsed) ? -1 : parsed;
+      loadPayloads(function onLoaded(latest, history) {
+        populateHistory(history, latest);
+        loadPayloadForEditor(latest, history);
+      });
     });
+
+    if (payloadPanelApi) {
+      jsonEditor = payloadPanelApi.createImportPayloadPanel({
+        getBaselinePayload: function getBaseline() {
+          return null;
+        },
+        onStatus: setStatus,
+        onSave: function onSavePayload(payload, done) {
+          savePayload(payload, function onSaved(ok) {
+            done(ok, ok ? "Payload saved." : "Failed to save payload.");
+          });
+        }
+      });
+    }
 
     fillButton.addEventListener("click", function onFill() {
       loadPayloads(function onLoaded(latest, history, applyReconDefaultsStored) {
         populateHistory(history, latest);
 
         let payload = latest || null;
-        if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
+        const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+        if (editorParsed.ok) {
+          payload = editorParsed.payload;
+        } else if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
           payload = history[selectedHistoryIndex];
         } else if (!payload && history.length) {
           payload = history[0];
@@ -331,16 +495,18 @@
 
         const applyReconDefaults = reconCheckbox.checked || applyReconDefaultsStored;
         if (!payload) {
-          setStatus("No saved WorkCenter payload found");
+          setStatus("No saved WorkCenter payload found. Scrape on WorkCenter first.");
           return;
         }
 
         const fillResult = fillFromPayload(payload, applyReconDefaults);
         const staleMessage = getStalenessMessage(payload);
         const missingText = fillResult.missing.length ? " Missing: " + fillResult.missing.join(", ") + "." : "";
+        const addressText = fillResult.addressSummary ? " Address: " + fillResult.addressSummary + "." : "";
         setStatus(
           "Filled " + fillResult.filled + " fields." +
-          (staleMessage ? " " + staleMessage : "") +
+          addressText +
+          staleMessage +
           " History: " + history.length + "/5." +
           missingText
         );
@@ -353,12 +519,16 @@
     panel.appendChild(historySelect);
     panel.appendChild(reconWrap);
     panel.appendChild(status);
+    if (jsonEditor) {
+      panel.appendChild(jsonEditor.element);
+    }
     document.body.appendChild(panel);
 
     loadPayloads(function initHistory(latest, history) {
       populateHistory(history, latest);
+      loadPayloadForEditor(latest, history);
       if (history.length) {
-        setStatus("Ready. Select a history record or use latest.");
+        setStatus("Ready. Review JSON, then click Fill.");
       }
     });
   }
