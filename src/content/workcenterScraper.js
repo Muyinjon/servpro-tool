@@ -2,6 +2,7 @@
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
   const selectorsApi = root.selectors;
   const fieldsApi = root.workcenterFields || {};
+  const settingsApi = root.settings;
 
   if (!selectorsApi || global !== global.top) {
     return;
@@ -610,7 +611,8 @@
 
     const autofillButton = document.createElement("button");
     autofillButton.type = "button";
-    autofillButton.textContent = "Autofill TeamAllenssm";
+    autofillButton.textContent = "Open import target";
+    autofillButton.style.display = "none";
 
     [scrapeButton, exportButton, autofillButton].forEach(function styleButton(btn) {
       btn.style.cssText = "border:1px solid #1976d2;background:#1976d2;color:#fff;border-radius:6px;padding:6px 8px;cursor:pointer;";
@@ -690,12 +692,13 @@
     });
 
     autofillButton.addEventListener("click", function onAutofill() {
-      const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+      function openTeamAllen() {
+        const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
       if (editorParsed.ok) {
         latestPayload = editorParsed.payload;
         savePayload(latestPayload, function onSave(ok, historyCount) {
           global.open(selectorsApi.WORKCENTER_IMPORT.teamallenssmAddUrl, "_blank");
-          setStatus("Opened TeamAllenssm. History: " + historyCount + "/5.");
+          setStatus("Opened import target. History: " + historyCount + "/5.");
         });
         return;
       }
@@ -704,9 +707,32 @@
       }
       savePayload(latestPayload, function onSave(ok, historyCount) {
         global.open(selectorsApi.WORKCENTER_IMPORT.teamallenssmAddUrl, "_blank");
-        setStatus("Opened TeamAllenssm. History: " + historyCount + "/5.");
+        setStatus("Opened import target. History: " + historyCount + "/5.");
       });
+      }
+
+      if (settingsApi) {
+        settingsApi.getSettings(function onSettings(settings) {
+          if (!settingsApi.isTeamAllenActivated(settings)) {
+            setStatus("Enter access code in Settings first.");
+            return;
+          }
+          openTeamAllen();
+        });
+        return;
+      }
+      openTeamAllen();
     });
+
+    if (settingsApi) {
+      settingsApi.getSettings(function onSettings(settings) {
+        if (settingsApi.isTeamAllenActivated(settings)) {
+          autofillButton.style.display = "";
+        }
+      });
+    } else {
+      autofillButton.style.display = "";
+    }
 
     buttonBar.appendChild(scrapeButton);
     buttonBar.appendChild(exportButton);

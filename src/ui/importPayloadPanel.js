@@ -77,6 +77,8 @@
     const onStatus = options.onStatus || function noop() {};
     const analyzePayload = options.analyzePayload || null;
     const enablePaste = Boolean(options.enablePaste);
+    const pastePlacement = options.pastePlacement || "editor";
+    const pasteInline = enablePaste && pastePlacement === "inline";
     const getBaselinePayload = options.getBaselinePayload || function noop() {
       return null;
     };
@@ -129,7 +131,7 @@
     styleSecondaryButton(resetBtn);
 
     let pasteBtn = null;
-    if (enablePaste) {
+    if (enablePaste && !pasteInline) {
       pasteBtn = document.createElement("button");
       pasteBtn.type = "button";
       pasteBtn.textContent = "Paste JSON";
@@ -221,29 +223,45 @@
       });
     });
 
+    function pasteFromClipboard(done) {
+      readClipboardText(function onClipboard(result) {
+        if (!result.ok) {
+          setJsonError(result.error);
+          onStatus(result.error);
+          if (typeof done === "function") {
+            done(false);
+          }
+          return;
+        }
+        const parsed = parsePayloadText(result.text);
+        if (!parsed.ok) {
+          setJsonError(parsed.error);
+          onStatus(parsed.error);
+          if (typeof done === "function") {
+            done(false);
+          }
+          return;
+        }
+        const analysis = runPayloadChecks(parsed.payload);
+        if (!analysis.ok) {
+          const msg = analysis.errors.join(" ");
+          setJsonError(msg);
+          onStatus(msg);
+          if (typeof done === "function") {
+            done(false);
+          }
+          return;
+        }
+        applyEditorPayload(parsed.payload, analysis);
+        if (typeof done === "function") {
+          done(true);
+        }
+      });
+    }
+
     if (pasteBtn) {
       pasteBtn.addEventListener("click", function onPasteClick() {
-        readClipboardText(function onClipboard(result) {
-          if (!result.ok) {
-            setJsonError(result.error);
-            onStatus(result.error);
-            return;
-          }
-          const parsed = parsePayloadText(result.text);
-          if (!parsed.ok) {
-            setJsonError(parsed.error);
-            onStatus(parsed.error);
-            return;
-          }
-          const analysis = runPayloadChecks(parsed.payload);
-          if (!analysis.ok) {
-            const msg = analysis.errors.join(" ");
-            setJsonError(msg);
-            onStatus(msg);
-            return;
-          }
-          applyEditorPayload(parsed.payload, analysis);
-        });
+        pasteFromClipboard();
       });
     }
 
@@ -294,7 +312,8 @@
         if (!expanded) {
           toggleExpanded();
         }
-      }
+      },
+      pasteFromClipboard: pasteFromClipboard
     };
   }
 

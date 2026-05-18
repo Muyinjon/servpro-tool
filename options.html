@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ServPro Helper — Settings</title>
+    <link rel="stylesheet" href="src/ui/options.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="icon-48.png" alt="" />
+        <div>
+          <h1>ServPro Helper Settings</h1>
+          <p class="sub">Import helper, FNOL, and display preferences</p>
+        </div>
+      </header>
+
+      <section id="settingsCard" class="card locked">
+        <h2>Display &amp; behavior</h2>
+        <div class="row">
+          <input type="checkbox" id="hideListPanel" />
+          <label for="hideListPanel">Hide list page paste panel (<code>servpro-teamallenssm-list-panel</code>)</label>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="hideAddEditHelperPanel" />
+          <label for="hideAddEditHelperPanel">Hide add/edit import helper panel</label>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="autoCollapsePanels" />
+          <label for="autoCollapsePanels">Auto-collapse helper panels on load</label>
+        </div>
+        <div class="field">
+          <label for="defaultJobModeOnFill">Default coordinator mode on fill</label>
+          <select id="defaultJobModeOnFill" name="defaultJobModeOnFill">
+            <option value="none">Non-default</option>
+            <option value="recon">Default recon</option>
+            <option value="mitigation">Default mitigation</option>
+          </select>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="fnolAutoSave" />
+          <label for="fnolAutoSave">Auto-save after FNOL submit (clicks Save on add page)</label>
+        </div>
+        <div class="row">
+          <input type="checkbox" id="showEditCopyButton" />
+          <label for="showEditCopyButton">Show “Copy current job” on edit pages</label>
+        </div>
+        <div class="actions">
+          <button type="button" id="saveSettingsBtn" class="btn secondary">Save settings</button>
+        </div>
+        <div id="settingsStatus" class="status"></div>
+      </section>
+
+      <section id="fnolCard" class="card locked">
+        <h2>First Notice of Loss (FNOL)</h2>
+        <p class="hint">Fill out job details, then submit to open the add-job page, fill the form, and save.</p>
+        <form id="fnolForm">
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolCustomer">Customer *</label>
+              <input id="fnolCustomer" name="customerName" required />
+            </div>
+            <div class="field">
+              <label for="fnolBusiness">Business</label>
+              <input id="fnolBusiness" name="businessName" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolPhone1">Phone 1</label>
+              <input id="fnolPhone1" name="primaryPhone" />
+            </div>
+            <div class="field">
+              <label for="fnolPhone2">Phone 2</label>
+              <input id="fnolPhone2" name="secondaryPhone" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolEmail">Email</label>
+              <input id="fnolEmail" name="email" type="email" />
+            </div>
+            <div class="field">
+              <label for="fnolClaim">Claim #</label>
+              <input id="fnolClaim" name="claimNumber" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolPropertyType">Property type</label>
+              <select id="fnolPropertyType" name="propertyType">
+                <option value="">—</option>
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fnolPayType">Pay type</label>
+              <select id="fnolPayType" name="payType">
+                <option value="">—</option>
+                <option value="SELF">SELF</option>
+                <option value="INSURANCE">INSURANCE</option>
+                <option value="3RD PARTY">3RD PARTY</option>
+                <option value="COMM Account">COMM Account</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolLossType">Loss type</label>
+              <input id="fnolLossType" name="lossType" placeholder="e.g. Water" />
+            </div>
+            <div class="field">
+              <label for="fnolBusinessUnit">Bus. unit</label>
+              <select id="fnolBusinessUnit" name="businessUnit">
+                <option value="">—</option>
+                <option value="NW Brooklyn">NW Brooklyn</option>
+                <option value="Staten Island">Staten Island</option>
+                <option value="Rockaways/Coney">Rockaways/Coney</option>
+                <option value="Forest Hills">Forest Hills</option>
+                <option value="Bay Ridge">Bay Ridge</option>
+                <option value="Mill Basin">Mill Basin</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="fnolAddress1">Address 1</label>
+            <input id="fnolAddress1" name="address1" />
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolCity">City</label>
+              <input id="fnolCity" name="city" />
+            </div>
+            <div class="field">
+              <label for="fnolState">State</label>
+              <input id="fnolState" name="state" maxlength="2" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fnolZip">Zip</label>
+              <input id="fnolZip" name="zip" />
+            </div>
+            <div class="field">
+              <label for="fnolInsurance">Insurance company</label>
+              <input id="fnolInsurance" name="insuranceCarrier" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="fnolCoordinator">Coordinator</label>
+            <input id="fnolCoordinator" name="coordinator" />
+          </div>
+          <div class="field">
+            <label for="fnolNotes">Notes (stored in payload only)</label>
+            <textarea id="fnolNotes" name="notes"></textarea>
+          </div>
+          <div class="actions">
+            <button type="submit" id="fnolSubmitBtn" class="btn">Submit new job</button>
+            <button type="button" id="fnolClearBtn" class="btn secondary">Clear form</button>
+          </div>
+        </form>
+        <div id="fnolStatus" class="status"></div>
+      </section>
+
+      <section id="activationCard" class="card activation">
+        <h2>Access code</h2>
+        <p class="hint">Enter your access code to unlock import tools, FNOL, and related settings.</p>
+        <div id="activationActive" class="status ok" style="display: none">Access enabled.</div>
+        <div id="activationForm">
+          <div class="field">
+            <label for="activationCode">Code</label>
+            <input id="activationCode" type="password" autocomplete="off" placeholder="Enter code" />
+          </div>
+          <div class="actions">
+            <button type="button" id="activateBtn" class="btn">Submit code</button>
+          </div>
+        </div>
+        <div id="activationStatus" class="status"></div>
+      </section>
+    </div>
+
+    <script src="src/lib/settings.js"></script>
+    <script src="src/ui/options.js"></script>
+  </body>
+</html>

@@ -27,8 +27,20 @@ Chrome extension for ServPro WorkCenter that helps users quickly apply one image
 ## Permissions
 
 - `storage`: used to remember the last selected image type and scraped WorkCenter payloads (including scrape history)
+- `tabs`: used to open TeamAllen add-job from FNOL and the settings page
 - `https://*.servpronet.io/*`: required so the extension can run on ServPro WorkCenter pages
 - `https://teamallenssm.com/*`: required for TeamAllenssm job form autofill
+
+## Extension icon, settings, and access code
+
+Click the extension icon to open the popup, then open **Settings**.
+
+- Enter access code **`TeamAllenSSM`** at the bottom of Settings to unlock import tools.
+- Coordinator defaults on the import helper panel: **Non-default**, **Default recon** (Johnny Turobov + Amit Persaud), or **Default mitigation** (Felece Jordan).
+- Settings include hiding panels, auto-collapse, default fill mode, FNOL auto-save, and edit-page copy.
+- **Paste JSON** sits beside **Fill from WorkCenter payload** on the import helper panel.
+- **FNOL** form: fill job details and click **Submit new job** to save the payload, open the add-job page, auto-fill, and auto-click Save (when enabled).
+- On **edit** pages, use **Copy current job to payload** to save JSON to history and copy to the clipboard for use on other tabs.
 
 ## Privacy
 
@@ -50,7 +62,7 @@ Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-base
 3. On the TeamAllen add-job page, use **TeamAllenssm Import Helper**:
    - Review or edit JSON, then click `Fill from WorkCenter payload`.
    - Choose a record from the last 5 scraped history entries if needed.
-   - Optional: enable `Apply recon defaults` for rebuild/recon jobs (Coordinator/Recon Mgr).
+   - Optional: choose coordinator default mode (Non-default / Default recon / Default mitigation) on the import helper panel.
    - Review the form and click Save manually.
 
 ### Fields scraped and filled

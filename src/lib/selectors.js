@@ -202,6 +202,7 @@
     storageKey: "servproUploadHelper.workcenterPayload",
     historyKey: "servproUploadHelper.workcenterPayloadHistory",
     reconToggleKey: "servproUploadHelper.applyReconDefaults",
+    jobDefaultModeKey: "servproUploadHelper.jobDefaultMode",
     maxHistory: 5,
     staleHours: 24,
     teamallenssmAddUrl: "https://teamallenssm.com/jobs1_add.php?",
@@ -215,8 +216,14 @@
     },
     reconDefaults: {
       coordinator: "Johnny Turobov",
-      reconManager: "Amit Persaud"
+      coordinatorValue: "8",
+      reconManager: "Amit Persaud",
+      reconManagerValue: "5"
     },
+    mitigationDefaults: {
+      coordinator: "Felece Jordan",
+      coordinatorValue: "14"
+    }
   };
 
   const fieldsApi = root.workcenterFields || {};
@@ -233,6 +240,8 @@
     return /\.[a-z0-9]{2,5}$/i.test(String(value || "").trim());
   }
 
+  const settingsApi = root.settings || {};
+
   root.selectors = {
     IMAGE_TYPES: ATTACHMENT_IMAGE_TYPES,
     ATTACHMENT_IMAGE_TYPES,
@@ -240,6 +249,11 @@
     SELECTORS,
     FLOWS,
     WORKCENTER_IMPORT,
+    SETTINGS_KEY: settingsApi.SETTINGS_KEY || "servproUploadHelper.settings",
+    PENDING_AUTO_SUBMIT_KEY:
+      settingsApi.PENDING_AUTO_SUBMIT_KEY || "servproUploadHelper.pendingTeamAllenAutoSubmit",
+    ACTIVATION_CODE: settingsApi.ACTIVATION_CODE || "TeamAllenSSM",
+    DEFAULT_SETTINGS: settingsApi.DEFAULT_SETTINGS,
     TEAMALLENSSM_FIELD_MAP,
     WORKCENTER_SELECTORS: fieldsApi.WORKCENTER_SELECTORS,
     LOSS_TYPE_ALIASES: fieldsApi.LOSS_TYPE_ALIASES,
