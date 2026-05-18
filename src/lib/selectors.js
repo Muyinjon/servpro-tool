@@ -218,7 +218,9 @@
       coordinator: "Johnny Turobov",
       coordinatorValue: "8",
       reconManager: "Amit Persaud",
-      reconManagerValue: "5"
+      reconManagerValue: "5",
+      lossType: "REBUILD",
+      lossTypeValue: "16"
     },
     mitigationDefaults: {
       coordinator: "Felece Jordan",

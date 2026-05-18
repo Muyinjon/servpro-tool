@@ -36,7 +36,7 @@ Chrome extension for ServPro WorkCenter that helps users quickly apply one image
 Click the extension icon to open the popup, then open **Settings**.
 
 - Enter access code **`TeamAllenSSM`** at the bottom of Settings to unlock import tools.
-- Coordinator defaults on the import helper panel: **Non-default**, **Default recon** (Johnny Turobov + Amit Persaud), or **Default mitigation** (Felece Jordan).
+- Coordinator defaults on the import helper panel: **Non-default**, **Default recon** (Johnny Turobov, Amit Persaud, Loss Type REBUILD), or **Default mitigation** (Felece Jordan).
 - Settings include hiding panels, auto-collapse, default fill mode, FNOL auto-save, and edit-page copy.
 - **Paste JSON** sits beside **Fill from WorkCenter payload** on the import helper panel.
 - **FNOL** form: fill job details and click **Submit new job** to save the payload, open the add-job page, auto-fill, and auto-click Save (when enabled).

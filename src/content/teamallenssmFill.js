@@ -404,6 +404,8 @@
       selectFieldValues.coordinatorValue = wi.reconDefaults.coordinatorValue;
       selectFieldValues.reconManager = wi.reconDefaults.reconManager;
       selectFieldValues.reconManagerValue = wi.reconDefaults.reconManagerValue;
+      selectFieldValues.lossType = wi.reconDefaults.lossType;
+      selectFieldValues.lossTypeValue = wi.reconDefaults.lossTypeValue;
     } else if (defaultMode === "mitigation" && wi.mitigationDefaults) {
       selectFieldValues.coordinator = wi.mitigationDefaults.coordinator;
       selectFieldValues.coordinatorValue = wi.mitigationDefaults.coordinatorValue;
@@ -607,7 +609,8 @@
 
     const selectOptionValues = {
       coordinator: selectFieldValues.coordinatorValue,
-      reconManager: selectFieldValues.reconManagerValue
+      reconManager: selectFieldValues.reconManagerValue,
+      lossType: selectFieldValues.lossTypeValue
     };
 
     let filled = 0;
