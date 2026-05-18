@@ -214,6 +214,85 @@
     return parts.join(" | ");
   }
 
+  function hasRecognizableJobField(payload) {
+    const fieldGroups = [
+      ["customerName", "customer", "Customer"],
+      ["businessName", "business", "Business"],
+      ["primaryPhone", "phone1", "phone", "PhonePrimary"],
+      ["claimNumber", "claim", "claimNo", "InsClaimNo"],
+      ["address1", "Address1", "address", "fullAddress"],
+      ["propertyType", "PropertyType", "type"],
+      ["lossType", "LossType"],
+      ["email", "EMail", "Email"],
+      ["businessUnit", "busUnit", "BusinessUnit"],
+      ["insuranceCarrier", "InsuranceCompany", "insurance"],
+      ["coordinator", "Coordinator"]
+    ];
+    return fieldGroups.some(function eachGroup(keys) {
+      return Boolean(firstNonEmpty(keys.map(function fieldKey(key) {
+        return payload[key];
+      })));
+    });
+  }
+
+  function analyzeImportPayload(payload) {
+    const errors = [];
+    const warnings = [];
+
+    if (payload.steps && Array.isArray(payload.steps)) {
+      errors.push("This looks like a browser recording (has a \"steps\" list), not job data.");
+    }
+    if (
+      normalizeText(payload.title).indexOf("recording") !== -1 &&
+      !hasRecognizableJobField(payload)
+    ) {
+      errors.push("This looks like a recording export, not a WorkCenter job payload.");
+    }
+
+    if (!hasRecognizableJobField(payload)) {
+      errors.push("No recognizable job fields. Add customer, address, claim #, phone, or similar.");
+    }
+
+    const source = buildSource(payload);
+    const rawClaim = firstNonEmpty([payload.claimNumber, payload.claim, payload.claimNo, payload.InsClaimNo]);
+    if (normalizeText(rawClaim) && !source.claimNumber) {
+      warnings.push("Claim # looks invalid (not a real claim number).");
+    }
+    const rawBusiness = firstNonEmpty([payload.businessName, payload.business, payload.Business]);
+    if (normalizeText(rawBusiness) && !source.businessName) {
+      warnings.push("Business name looks like a label or placeholder.");
+    }
+    if (source.email && source.email.indexOf("@") === -1) {
+      warnings.push("Email does not look valid.");
+    }
+    if (source.primaryPhone && source.primaryPhone.replace(/\D/g, "").length > 0 && source.primaryPhone.replace(/\D/g, "").length < 7) {
+      warnings.push("Primary phone looks too short.");
+    }
+    if (!source.customerName && !source.businessName) {
+      warnings.push("No customer or business name to fill.");
+    }
+    if (!source.address1 && !normalizeText(payload.fullAddress)) {
+      warnings.push("No address found.");
+    }
+
+    return {
+      ok: errors.length === 0,
+      errors: errors,
+      warnings: warnings
+    };
+  }
+
+  function formatImportAnalysisMessage(analysis) {
+    const parts = [];
+    if (analysis.errors.length) {
+      parts.push(analysis.errors.join(" "));
+    }
+    if (analysis.warnings.length) {
+      parts.push(analysis.warnings.join(" "));
+    }
+    return parts.join(" ");
+  }
+
   function fillFromPayload(payload, applyReconDefaultsEnabled) {
     const map = selectorsApi.TEAMALLENSSM_FIELD_MAP;
     const source = buildSource(payload);
@@ -470,6 +549,7 @@
     closeBtn.addEventListener("click", function onClose() {
       collapseControl.collapse();
     });
+    collapseControl.collapse();
 
     document.addEventListener("click", function onAddJobClick(e) {
       const addJobBtn = e.target && e.target.closest && e.target.closest("#AddJpb_Button_9");
@@ -494,6 +574,7 @@
 
     const payloadPanelApi = root.importPayloadPanel;
     let jsonEditor = null;
+    let latestStoredPayload = null;
 
     const panel = document.createElement("div");
     panel.id = "servpro-teamallenssm-helper-panel";
@@ -617,12 +698,17 @@
 
     if (payloadPanelApi) {
       jsonEditor = payloadPanelApi.createImportPayloadPanel({
+        enablePaste: true,
+        analyzePayload: analyzeImportPayload,
         getBaselinePayload: function getBaseline() {
-          return null;
+          return latestStoredPayload;
         },
         onStatus: setStatus,
         onSave: function onSavePayload(payload, done) {
           savePayload(payload, function onSaved(ok) {
+            if (ok) {
+              latestStoredPayload = payload;
+            }
             done(ok, ok ? "Payload saved." : "Failed to save payload.");
           });
         }
@@ -632,20 +718,44 @@
     fillButton.addEventListener("click", function onFill() {
       loadPayloads(function onLoaded(latest, history, applyReconDefaultsStored) {
         populateHistory(history, latest);
+        if (latest) {
+          latestStoredPayload = latest;
+        }
 
-        let payload = latest || null;
+        let payload = null;
+        const editorHasText = jsonEditor && payloadPanelApi && normalizeText(jsonEditor.getText());
         const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
-        if (editorParsed.ok) {
+
+        if (editorHasText) {
+          if (!editorParsed.ok) {
+            jsonEditor.setJsonError(editorParsed.error);
+            setStatus(editorParsed.error);
+            return;
+          }
+          const analysis = analyzeImportPayload(editorParsed.payload);
+          if (!analysis.ok) {
+            const msg = formatImportAnalysisMessage(analysis);
+            jsonEditor.setJsonError(analysis.errors.join(" "));
+            setStatus(msg);
+            return;
+          }
+          if (analysis.warnings.length) {
+            jsonEditor.setJsonError(analysis.warnings.join(" "), true);
+          } else if (jsonEditor.setJsonError) {
+            jsonEditor.setJsonError("");
+          }
           payload = editorParsed.payload;
         } else if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
           payload = history[selectedHistoryIndex];
-        } else if (!payload && history.length) {
+        } else if (latest) {
+          payload = latest;
+        } else if (history.length) {
           payload = history[0];
         }
 
         const applyReconDefaults = reconCheckbox.checked || applyReconDefaultsStored;
         if (!payload) {
-          setStatus("No saved WorkCenter payload found. Scrape on WorkCenter first.");
+          setStatus("No payload to fill. Paste JSON, save a payload, or scrape on WorkCenter first.");
           return;
         }
 
@@ -683,10 +793,13 @@
     });
 
     loadPayloads(function initHistory(latest, history) {
+      latestStoredPayload = latest || null;
       populateHistory(history, latest);
       loadPayloadForEditor(latest, history);
-      if (history.length) {
-        setStatus("Ready. Review JSON, then click Fill.");
+      if (history.length || latest) {
+        setStatus("Ready. Paste JSON or click Fill.");
+      } else {
+        setStatus("Ready. Paste JSON from WorkCenter or scrape there first.");
       }
     });
   }

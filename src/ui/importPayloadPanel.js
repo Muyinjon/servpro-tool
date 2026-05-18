@@ -32,6 +32,19 @@
     }
   }
 
+  function readClipboardText(callback) {
+    const nav = global.navigator;
+    if (nav && nav.clipboard && typeof nav.clipboard.readText === "function") {
+      nav.clipboard.readText().then(function onRead(text) {
+        callback({ ok: true, text: text || "" });
+      }).catch(function onFail(error) {
+        callback({ ok: false, error: error && error.message ? error.message : "Clipboard read failed." });
+      });
+      return;
+    }
+    callback({ ok: false, error: "Clipboard paste is not available in this browser." });
+  }
+
   function copyText(text, callback) {
     const nav = global.navigator;
     if (nav && nav.clipboard && typeof nav.clipboard.writeText === "function") {
@@ -62,6 +75,8 @@
   function createImportPayloadPanel(options) {
     const onSave = options.onSave || function noop() {};
     const onStatus = options.onStatus || function noop() {};
+    const analyzePayload = options.analyzePayload || null;
+    const enablePaste = Boolean(options.enablePaste);
     const getBaselinePayload = options.getBaselinePayload || function noop() {
       return null;
     };
@@ -113,17 +128,45 @@
     resetBtn.textContent = "Reset to last scrape";
     styleSecondaryButton(resetBtn);
 
+    let pasteBtn = null;
+    if (enablePaste) {
+      pasteBtn = document.createElement("button");
+      pasteBtn.type = "button";
+      pasteBtn.textContent = "Paste JSON";
+      styleSecondaryButton(pasteBtn);
+    }
+
     let expanded = false;
     let lastSavedPayload = null;
 
-    function setJsonError(message) {
+    function setJsonError(message, isWarning) {
       if (!normalizeText(message)) {
         errorEl.style.display = "none";
         errorEl.textContent = "";
+        errorEl.style.color = "#b42318";
         return;
       }
       errorEl.style.display = "block";
       errorEl.textContent = message;
+      errorEl.style.color = isWarning ? "#b54708" : "#b42318";
+    }
+
+    function runPayloadChecks(payload) {
+      if (!analyzePayload) {
+        return { ok: true, errors: [], warnings: [] };
+      }
+      return analyzePayload(payload) || { ok: true, errors: [], warnings: [] };
+    }
+
+    function applyEditorPayload(parsed, analysis) {
+      setPayload(parsed, { expand: true });
+      if (analysis.warnings.length) {
+        setJsonError(analysis.warnings.join(" "), true);
+        onStatus("Pasted with notes: " + analysis.warnings.join(" "));
+      } else {
+        setJsonError("");
+        onStatus("Pasted JSON into editor.");
+      }
     }
 
     function setPayload(payload, optionsInner) {
@@ -157,14 +200,52 @@
         onStatus(parsed.error);
         return;
       }
-      setJsonError("");
+      const analysis = runPayloadChecks(parsed.payload);
+      if (!analysis.ok) {
+        const msg = analysis.errors.join(" ");
+        setJsonError(msg);
+        onStatus(msg);
+        return;
+      }
+      if (analysis.warnings.length) {
+        setJsonError(analysis.warnings.join(" "), true);
+      } else {
+        setJsonError("");
+      }
       onSave(parsed.payload, function onSaved(ok, message) {
         if (ok) {
           lastSavedPayload = parsed.payload;
         }
-        onStatus(message || (ok ? "Payload saved." : "Failed to save payload."));
+        const warnSuffix = analysis.warnings.length ? " " + analysis.warnings.join(" ") : "";
+        onStatus((message || (ok ? "Payload saved." : "Failed to save payload.")) + warnSuffix);
       });
     });
+
+    if (pasteBtn) {
+      pasteBtn.addEventListener("click", function onPasteClick() {
+        readClipboardText(function onClipboard(result) {
+          if (!result.ok) {
+            setJsonError(result.error);
+            onStatus(result.error);
+            return;
+          }
+          const parsed = parsePayloadText(result.text);
+          if (!parsed.ok) {
+            setJsonError(parsed.error);
+            onStatus(parsed.error);
+            return;
+          }
+          const analysis = runPayloadChecks(parsed.payload);
+          if (!analysis.ok) {
+            const msg = analysis.errors.join(" ");
+            setJsonError(msg);
+            onStatus(msg);
+            return;
+          }
+          applyEditorPayload(parsed.payload, analysis);
+        });
+      });
+    }
 
     copyBtn.addEventListener("click", function onCopyClick() {
       const text = textarea.value || "";
@@ -188,6 +269,9 @@
     });
 
     actions.appendChild(saveBtn);
+    if (pasteBtn) {
+      actions.appendChild(pasteBtn);
+    }
     actions.appendChild(copyBtn);
     actions.appendChild(resetBtn);
 
@@ -217,6 +301,7 @@
   root.importPayloadPanel = {
     formatPayload,
     parsePayloadText,
+    readClipboardText,
     copyText,
     createImportPayloadPanel
   };
