@@ -119,6 +119,10 @@
     return /teamallenssm\.com$/i.test(global.location.hostname) && /jobs1_add\.php/i.test(global.location.pathname + global.location.search);
   }
 
+  function isOnListPage() {
+    return /teamallenssm\.com$/i.test(global.location.hostname) && /jobs1_list\.php/i.test(global.location.pathname + global.location.search);
+  }
+
   function shouldApplyReconDefaults(source, enabled) {
     if (!enabled) {
       return false;
@@ -345,6 +349,144 @@
     });
   }
 
+  function makeCollapsible(panel, restoreLabel, onCollapse) {
+    var restoreBtn = null;
+
+    function collapse() {
+      panel.style.display = "none";
+      if (restoreBtn && restoreBtn.parentElement) {
+        return;
+      }
+      restoreBtn = document.createElement("button");
+      restoreBtn.type = "button";
+      restoreBtn.textContent = restoreLabel;
+      restoreBtn.style.cssText = [
+        "position:fixed",
+        "right:16px",
+        "bottom:16px",
+        "z-index:2147483647",
+        "background:#1976d2",
+        "color:#fff",
+        "border:none",
+        "border-radius:20px",
+        "padding:5px 12px",
+        "font:12px/1.4 Arial,sans-serif",
+        "cursor:pointer",
+        "box-shadow:0 2px 8px rgba(0,0,0,.25)"
+      ].join(";");
+      restoreBtn.addEventListener("click", function onRestore() {
+        panel.style.display = "block";
+        if (restoreBtn && restoreBtn.parentElement) {
+          restoreBtn.parentElement.removeChild(restoreBtn);
+        }
+        restoreBtn = null;
+      });
+      document.body.appendChild(restoreBtn);
+      if (typeof onCollapse === "function") {
+        onCollapse();
+      }
+    }
+
+    return { collapse: collapse };
+  }
+
+  function createListPagePanel() {
+    if (document.getElementById("servpro-teamallenssm-list-panel")) {
+      return;
+    }
+
+    const payloadPanelApi = root.importPayloadPanel;
+    if (!payloadPanelApi) {
+      return;
+    }
+
+    const panel = document.createElement("div");
+    panel.id = "servpro-teamallenssm-list-panel";
+    panel.style.cssText = [
+      "position:fixed",
+      "right:16px",
+      "bottom:16px",
+      "z-index:2147483647",
+      "background:#fff",
+      "border:1px solid #c7d2da",
+      "border-radius:8px",
+      "padding:10px",
+      "box-shadow:0 2px 12px rgba(0,0,0,.2)",
+      "width:380px",
+      "max-height:80vh",
+      "overflow:auto",
+      "font:13px/1.4 Arial,sans-serif"
+    ].join(";");
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;";
+
+    const titleEl = document.createElement("span");
+    titleEl.textContent = "Add Job \u2014 Paste Payload";
+    titleEl.style.fontWeight = "700";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "\u00d7";
+    closeBtn.title = "Hide panel";
+    closeBtn.style.cssText = "background:none;border:none;font-size:18px;line-height:1;cursor:pointer;color:#627d98;padding:0 2px;";
+
+    header.appendChild(titleEl);
+    header.appendChild(closeBtn);
+
+    const hint = document.createElement("div");
+    hint.textContent = "Paste WorkCenter JSON below, save it, then click \u201cAdd Job\u201d above.";
+    hint.style.cssText = "font-size:12px;color:#627d98;margin-bottom:8px;line-height:1.4;";
+
+    const status = document.createElement("div");
+    status.style.cssText = "margin-top:8px;color:#334e68;font-size:12px;";
+    status.textContent = "Ready";
+
+    function setStatus(message) {
+      status.textContent = message;
+    }
+
+    const jsonEditor = payloadPanelApi.createImportPayloadPanel({
+      getBaselinePayload: function getBaseline() {
+        return null;
+      },
+      onStatus: setStatus,
+      onSave: function onSavePayload(payload, done) {
+        savePayload(payload, function onSaved(ok) {
+          done(ok, ok ? "Payload saved. Now click \u201cAdd Job\u201d to open the form." : "Failed to save payload.");
+        });
+      }
+    });
+
+    jsonEditor.expand();
+
+    panel.appendChild(header);
+    panel.appendChild(hint);
+    panel.appendChild(jsonEditor.element);
+    panel.appendChild(status);
+    document.body.appendChild(panel);
+
+    const collapseControl = makeCollapsible(panel, "SP Helper \u25b2");
+    closeBtn.addEventListener("click", function onClose() {
+      collapseControl.collapse();
+    });
+
+    document.addEventListener("click", function onAddJobClick(e) {
+      const addJobBtn = e.target && e.target.closest && e.target.closest("#AddJpb_Button_9");
+      if (addJobBtn && panel.style.display !== "none") {
+        collapseControl.collapse();
+      }
+    }, true);
+
+    loadPayloads(function initEditor(latest, history) {
+      const existing = latest || (history.length ? history[0] : null);
+      if (existing) {
+        jsonEditor.setPayload(existing, { expand: true });
+        setStatus("Existing payload loaded. Edit if needed, then save.");
+      }
+    });
+  }
+
   function createPanel() {
     if (document.getElementById("servpro-teamallenssm-helper-panel")) {
       return;
@@ -371,10 +513,18 @@
       "font:13px/1.4 Arial,sans-serif"
     ].join(";");
 
-    const title = document.createElement("div");
-    title.textContent = "TeamAllenssm Import Helper";
-    title.style.fontWeight = "700";
-    title.style.marginBottom = "8px";
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
+
+    const titleEl = document.createElement("span");
+    titleEl.textContent = "TeamAllenssm Import Helper";
+    titleEl.style.fontWeight = "700";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "\u00d7";
+    closeBtn.title = "Hide panel";
+    closeBtn.style.cssText = "background:none;border:none;font-size:18px;line-height:1;cursor:pointer;color:#627d98;padding:0 2px;";
 
     const fillButton = document.createElement("button");
     fillButton.type = "button";
@@ -513,7 +663,10 @@
       });
     });
 
-    panel.appendChild(title);
+    header.appendChild(titleEl);
+    header.appendChild(closeBtn);
+
+    panel.appendChild(header);
     panel.appendChild(fillButton);
     panel.appendChild(historyLabel);
     panel.appendChild(historySelect);
@@ -523,6 +676,11 @@
       panel.appendChild(jsonEditor.element);
     }
     document.body.appendChild(panel);
+
+    const collapseControl = makeCollapsible(panel, "SP Helper \u25b2");
+    closeBtn.addEventListener("click", function onClose() {
+      collapseControl.collapse();
+    });
 
     loadPayloads(function initHistory(latest, history) {
       populateHistory(history, latest);
@@ -534,10 +692,11 @@
   }
 
   function boot() {
-    if (!isOnAddJobPage()) {
-      return;
+    if (isOnAddJobPage()) {
+      createPanel();
+    } else if (isOnListPage()) {
+      createListPagePanel();
     }
-    createPanel();
   }
 
   if (document.readyState === "loading") {
