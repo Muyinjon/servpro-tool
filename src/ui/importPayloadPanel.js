@@ -125,6 +125,11 @@
     copyBtn.textContent = "Copy JSON";
     styleSecondaryButton(copyBtn);
 
+    const copyPlainBtn = document.createElement("button");
+    copyPlainBtn.type = "button";
+    copyPlainBtn.textContent = "Copy as normal text";
+    styleSecondaryButton(copyPlainBtn);
+
     const resetBtn = document.createElement("button");
     resetBtn.type = "button";
     resetBtn.textContent = "Reset to last scrape";
@@ -276,6 +281,26 @@
       });
     });
 
+    copyPlainBtn.addEventListener("click", function onCopyPlainClick() {
+      const parsed = getPayloadFromEditor();
+      const plainTextApi = root.payloadPlainText;
+      if (!parsed.ok) {
+        setJsonError(parsed.error);
+        onStatus(parsed.error);
+        return;
+      }
+      const text = plainTextApi
+        ? plainTextApi.formatPayloadAsPlainText(parsed.payload)
+        : "";
+      if (!normalizeText(text)) {
+        onStatus("Nothing to copy.");
+        return;
+      }
+      copyText(text, function onCopied(copied) {
+        onStatus(copied ? "Copied as normal text." : "Clipboard copy failed.");
+      });
+    });
+
     resetBtn.addEventListener("click", function onReset() {
       const baseline = getBaselinePayload() || lastSavedPayload;
       if (!baseline) {
@@ -291,6 +316,7 @@
       actions.appendChild(pasteBtn);
     }
     actions.appendChild(copyBtn);
+    actions.appendChild(copyPlainBtn);
     actions.appendChild(resetBtn);
 
     editorPanel.appendChild(textarea);

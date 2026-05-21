@@ -40,6 +40,7 @@
         "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
         "src/lib/kendoHelpers.js",
+        "src/lib/payloadPlainText.js",
         "src/ui/panel.js",
         "src/ui/importPayloadPanel.js",
         "src/content/topPage.js",
@@ -69,6 +70,7 @@
         "src/lib/settings.js",
         "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
+        "src/lib/payloadPlainText.js",
         "src/ui/importPayloadPanel.js",
         "src/content/teamallenssmFill.js"
       ],

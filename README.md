@@ -33,14 +33,18 @@ Chrome extension for ServPro WorkCenter that helps users quickly apply one image
 
 ## Extension icon, settings, and access code
 
-Click the extension icon to open the popup, then open **Settings**.
+Click the extension icon to open the popup.
 
-- Enter access code **`TeamAllenSSM`** at the bottom of Settings to unlock import tools.
-- Coordinator defaults on the import helper panel: **Non-default**, **Default recon** (Johnny Turobov, Amit Persaud, Loss Type REBUILD), or **Default mitigation** (Felece Jordan).
-- Settings include hiding panels, auto-collapse, default fill mode, FNOL auto-save, and edit-page copy.
-- **Paste JSON** sits beside **Fill from WorkCenter payload** on the import helper panel.
-- **FNOL** form: fill job details and click **Submit new job** to save the payload, open the add-job page, auto-fill, and auto-click Save (when enabled).
-- On **edit** pages, use **Copy current job to payload** to save JSON to history and copy to the clipboard for use on other tabs.
+- **First Notice of Loss** — dedicated page (`fnol.html`) with a two-panel layout: job history (name + entered timestamp) and the entry form.
+- **Settings** — access code, display preferences, add-job mode (list popup vs full page), FNOL auto-save, and a link to open the FNOL page.
+
+Enter access code **`TeamAllenSSM`** in Settings to unlock import tools and FNOL.
+
+- Coordinator defaults on the import helper panel: **Non-default**, **Default recon**, or **Default mitigation**.
+- **Add job opens as** (default: **List popup**): jobs list + Add Job modal. **Full page** opens `jobs1_add.php` directly.
+- **FNOL page**: sectioned form (basic, address, insurance & adjuster, notes), **Copy as normal text**, **Jobs entered** list with timestamps; submit opens TeamAllen and auto-fills (auto-save optional in Settings).
+- On **edit** pages, use **Copy current job (JSON)** or **Copy as normal text**; address is read from the visible address grid (opens inline edit if needed).
+- JSON panels also include **Copy as normal text** beside **Copy JSON**.
 
 ## Privacy
 
@@ -58,8 +62,8 @@ Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-base
    - Expand **Show payload JSON** to review or edit values, then `Save payload`.
    - `Copy JSON` (in the JSON panel) copies the current editor text.
    - `Export JSON` downloads the current editor text as a `.json` file.
-   - `Autofill TeamAllenssm` saves the current payload and opens `teamallenssm.com/jobs1_add.php`.
-3. On the TeamAllen add-job page, use **TeamAllenssm Import Helper**:
+   - `Autofill TeamAllenssm` saves the current payload and opens TeamAllen (jobs list + Add Job popup by default, or the full add page if configured).
+3. On the TeamAllen add-job form (popup iframe or full page), use **TeamAllenssm Import Helper**:
    - Review or edit JSON, then click `Fill from WorkCenter payload`.
    - Choose a record from the last 5 scraped history entries if needed.
    - Optional: choose coordinator default mode (Non-default / Default recon / Default mitigation) on the import helper panel.
@@ -94,7 +98,8 @@ Metadata only in JSON (not filled on add form): `projectName`, `projectId`, `pro
 ### Address handling
 
 - Street/city/state/zip come from `MainContent_txt_*` inputs first; header `txt_FullAddress` is parsed only as fallback.
-- TeamAllen address fields use dynamic IDs (`value_Address1_*`); the filler targets the visible inline-edit row in the address grid.
+- TeamAllen address fields use dynamic IDs (`value_Address1_*`); the filler and edit-page copy target the **visible** address grid row and open inline edit when values are display-only.
+- FNOL `lossTypeValue` is stored when you pick a loss type from the dropdown so TeamAllen autofill can select by option value.
 
 ### Notes
 

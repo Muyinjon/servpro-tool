@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>First Notice of Loss — ServPro Helper</title>
+    <link rel="stylesheet" href="src/ui/fnol.css" />
+  </head>
+  <body>
+    <div class="fnol-page">
+      <header class="fnol-header">
+        <div class="fnol-header-main">
+          <img src="icon-48.png" alt="" />
+          <div>
+            <h1>First Notice of Loss</h1>
+            <p class="sub">
+              Enter job details, then submit to open TeamAllen add job (full page or list popup per your
+              Settings) and auto-fill the form.
+            </p>
+          </div>
+        </div>
+        <nav class="fnol-nav">
+          <a id="openSettingsLink" href="#">Settings</a>
+        </nav>
+      </header>
+
+      <div class="fnol-layout">
+        <aside class="fnol-panel fnol-history-panel">
+          <h2>Jobs entered</h2>
+          <p id="fnolJobEmpty" class="fnol-job-empty">No jobs yet — submit the form to save one here.</p>
+          <ul id="fnolJobList" class="fnol-job-list" hidden></ul>
+        </aside>
+
+        <main id="fnolFormPanel" class="fnol-panel fnol-form-panel">
+          <div id="fnolLockedOverlay" class="fnol-locked-overlay">
+            <div class="fnol-unlock-card">
+              <h2>Access code required</h2>
+              <p class="fnol-unlock-hint">
+                Enter the same access code you use in Settings to unlock First Notice of Loss.
+              </p>
+              <div class="field">
+                <label for="fnolAccessCode">Access code</label>
+                <input
+                  id="fnolAccessCode"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="Enter access code"
+                />
+              </div>
+              <div class="actions">
+                <button type="button" id="fnolUnlockBtn" class="btn">Unlock FNOL</button>
+                <a id="lockedSettingsLink" class="btn secondary" href="#">Open Settings</a>
+              </div>
+              <div id="fnolUnlockStatus" class="status"></div>
+            </div>
+          </div>
+
+          <form id="fnolForm">
+            <fieldset class="fnol-section">
+              <legend>Basic information</legend>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolCustomer">Customer *</label>
+                  <input id="fnolCustomer" name="customerName" required />
+                </div>
+                <div class="field">
+                  <label for="fnolBusiness">Business</label>
+                  <input id="fnolBusiness" name="businessName" />
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolPhone1">Phone 1</label>
+                  <input id="fnolPhone1" name="primaryPhone" />
+                </div>
+                <div class="field">
+                  <label for="fnolPhone2">Phone 2</label>
+                  <input id="fnolPhone2" name="secondaryPhone" />
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolEmail">Email</label>
+                  <input id="fnolEmail" name="email" type="email" />
+                </div>
+                <div class="field">
+                  <label for="fnolPropertyType">Property type</label>
+                  <select id="fnolPropertyType" name="propertyType">
+                    <option value="">—</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Commercial">Commercial</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolPayType">Pay type</label>
+                  <select id="fnolPayType" name="payType">
+                    <option value="">—</option>
+                    <option value="SELF">SELF</option>
+                    <option value="INSURANCE">INSURANCE</option>
+                    <option value="3RD PARTY">3RD PARTY</option>
+                    <option value="COMM Account">COMM Account</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="fnolBusinessUnit">Bus. unit</label>
+                  <select id="fnolBusinessUnit" name="businessUnit">
+                    <option value="">—</option>
+                    <option value="NW Brooklyn">NW Brooklyn</option>
+                    <option value="Staten Island">Staten Island</option>
+                    <option value="Rockaways/Coney">Rockaways/Coney</option>
+                    <option value="Forest Hills">Forest Hills</option>
+                    <option value="Bay Ridge">Bay Ridge</option>
+                    <option value="Mill Basin">Mill Basin</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolLossType">Loss type</label>
+                  <select id="fnolLossType" name="lossType">
+                    <option value="">—</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="fnolCoordinator">Coordinator</label>
+                  <input id="fnolCoordinator" name="coordinator" />
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="fnol-section">
+              <legend>Address</legend>
+              <div class="field">
+                <label for="fnolAddress1">Address 1</label>
+                <input id="fnolAddress1" name="address1" />
+              </div>
+              <div class="field">
+                <label for="fnolAddress2">Address 2</label>
+                <input id="fnolAddress2" name="address2" />
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolCity">City</label>
+                  <input id="fnolCity" name="city" />
+                </div>
+                <div class="field">
+                  <label for="fnolState">State</label>
+                  <input id="fnolState" name="state" maxlength="2" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="fnolZip">Zip</label>
+                <input id="fnolZip" name="zip" />
+              </div>
+            </fieldset>
+
+            <fieldset class="fnol-section">
+              <legend>Insurance &amp; adjuster</legend>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolInsurance">Insurance company</label>
+                  <input id="fnolInsurance" name="insuranceCarrier" />
+                </div>
+                <div class="field">
+                  <label for="fnolClaim">Claim #</label>
+                  <input id="fnolClaim" name="claimNumber" />
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="fnolAdjusterName">Adjuster name</label>
+                  <input id="fnolAdjusterName" name="adjusterName" />
+                </div>
+                <div class="field">
+                  <label for="fnolAdjusterPhone">Adjuster phone</label>
+                  <input id="fnolAdjusterPhone" name="adjusterPhone" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="fnolAdjusterEmail">Adjuster email</label>
+                <input id="fnolAdjusterEmail" name="adjusterEmail" type="email" />
+              </div>
+            </fieldset>
+
+            <fieldset class="fnol-section">
+              <legend>Notes</legend>
+              <div class="field">
+                <label for="fnolNotes">Notes</label>
+                <textarea id="fnolNotes" name="notesUser"></textarea>
+                <p class="hint">Adjuster details are copied into notes on submit as a backup.</p>
+              </div>
+            </fieldset>
+
+            <div class="actions">
+              <button type="submit" id="fnolSubmitBtn" class="btn">Submit new job</button>
+              <button type="button" id="fnolClearBtn" class="btn secondary">Clear form</button>
+              <button type="button" id="fnolCopyPlainBtn" class="btn secondary">Copy as normal text</button>
+            </div>
+          </form>
+
+          <div id="fnolStatus" class="status"></div>
+        </main>
+      </div>
+    </div>
+
+    <script src="src/lib/settings.js"></script>
+    <script src="src/lib/selectors.js"></script>
+    <script src="src/lib/fnolNotes.js"></script>
+    <script src="src/lib/payloadPlainText.js"></script>
+    <script src="src/ui/fnol.js"></script>
+  </body>
+</html>

@@ -1,0 +1,374 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: #0f172a;
+  background: #e8eef4;
+}
+
+.fnol-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.fnol-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.fnol-header-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fnol-header img {
+  width: 48px;
+  height: 48px;
+}
+
+.fnol-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.fnol-header .sub {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  max-width: 520px;
+}
+
+.fnol-nav a {
+  display: inline-block;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334e68;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fnol-nav a:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.fnol-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 320px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .fnol-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fnol-panel {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.fnol-panel h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #334e68;
+}
+
+.fnol-job-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.fnol-job-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.fnol-job-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.fnol-job-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.fnol-job-item.is-active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.fnol-job-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.fnol-job-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #0f172a;
+  margin: 0 0 4px;
+  word-break: break-word;
+}
+
+.fnol-job-time {
+  font-size: 13px;
+  color: #475569;
+  margin: 0 0 2px;
+}
+
+.fnol-job-meta {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.fnol-job-delete {
+  flex-shrink: 0;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b42318;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.fnol-job-delete:hover {
+  background: #fef2f2;
+}
+
+.fnol-form-panel {
+  position: relative;
+}
+
+.fnol-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px 10px;
+  margin: 0 0 16px;
+  background: #fafbfc;
+}
+
+.fnol-section legend {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  padding: 0 8px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 5px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hint {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn {
+  border: 1px solid #1976d2;
+  background: #1976d2;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #1565c0;
+}
+
+.btn.secondary {
+  background: #fff;
+  color: #334e68;
+  border-color: #cbd5e1;
+}
+
+.btn.secondary:hover {
+  background: #f8fafc;
+}
+
+.status {
+  margin-top: 14px;
+  font-size: 14px;
+  color: #334e68;
+  min-height: 1.4em;
+}
+
+.status.error {
+  color: #b42318;
+}
+
+.status.ok {
+  color: #027a48;
+}
+
+.fnol-locked-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.96);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.fnol-locked-overlay.is-active {
+  display: flex;
+}
+
+.fnol-unlock-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.fnol-unlock-card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.fnol-unlock-hint {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.fnol-unlock-card .field label {
+  display: block;
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.fnol-unlock-card .field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.fnol-unlock-card .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.fnol-unlock-card .actions .btn.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.fnol-form-panel.is-locked #fnolForm,
+.fnol-form-panel.is-locked .actions,
+.fnol-form-panel.is-locked .status {
+  pointer-events: none;
+  opacity: 0.5;
+}

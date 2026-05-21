@@ -198,14 +198,34 @@
     }
   };
 
+  const TEAMALLEN_LOSS_TYPES = [
+    { label: "WATER", value: "1" },
+    { label: "FIRE", value: "2" },
+    { label: "MOLD", value: "3" },
+    { label: "GEN. CLEANING", value: "4" },
+    { label: "DUCT CLEANING", value: "5" },
+    { label: "BIO HAZARD", value: "15" },
+    { label: "REBUILD", value: "16" },
+    { label: "STORM", value: "17" },
+    { label: "PUFFBACK", value: "18" },
+    { label: "SMOKE", value: "19" },
+    { label: "SEWER", value: "14" },
+    { label: "BOARD UP", value: "22" },
+    { label: "STRUCTURE DAMAGE", value: "23" }
+  ];
+
   const WORKCENTER_IMPORT = {
     storageKey: "servproUploadHelper.workcenterPayload",
     historyKey: "servproUploadHelper.workcenterPayloadHistory",
+    fnolRegistryKey: "servproUploadHelper.fnolRegistry",
+    fnolRegistryMax: 30,
     reconToggleKey: "servproUploadHelper.applyReconDefaults",
     jobDefaultModeKey: "servproUploadHelper.jobDefaultMode",
     maxHistory: 5,
     staleHours: 24,
     teamallenssmAddUrl: "https://teamallenssm.com/jobs1_add.php?",
+    teamallenssmListUrl: "https://teamallenssm.com/jobs1_list.php?page=listJobs",
+    teamallenssmAddJobButtonSelectors: ["#AddJpb_Button_99", "#AddJpb_Button_9"],
     franchiseToBusinessUnit: {
       "northwest brooklyn": "NW Brooklyn",
       "northern staten island": "Staten Island",
@@ -251,6 +271,7 @@
     SELECTORS,
     FLOWS,
     WORKCENTER_IMPORT,
+    TEAMALLEN_LOSS_TYPES,
     SETTINGS_KEY: settingsApi.SETTINGS_KEY || "servproUploadHelper.settings",
     PENDING_AUTO_SUBMIT_KEY:
       settingsApi.PENDING_AUTO_SUBMIT_KEY || "servproUploadHelper.pendingTeamAllenAutoSubmit",

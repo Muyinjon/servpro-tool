@@ -692,23 +692,44 @@
     });
 
     autofillButton.addEventListener("click", function onAutofill() {
-      function openTeamAllen() {
-        const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
-      if (editorParsed.ok) {
-        latestPayload = editorParsed.payload;
-        savePayload(latestPayload, function onSave(ok, historyCount) {
-          global.open(selectorsApi.WORKCENTER_IMPORT.teamallenssmAddUrl, "_blank");
+      function openTeamAllenTarget(settings) {
+        const wi = selectorsApi.WORKCENTER_IMPORT;
+        const openVia = settingsApi
+          ? settingsApi.resolveTeamAllenOpenVia(settings)
+          : "page";
+        const targetUrl =
+          openVia === "modal" ? wi.teamallenssmListUrl : wi.teamallenssmAddUrl;
+
+        function afterSave(ok, historyCount) {
+          if (!ok) {
+            setStatus("Failed to save payload.");
+            return;
+          }
+          if (openVia === "modal" && settingsApi) {
+            settingsApi.setPendingAutoSubmit({ autoSave: false, openVia: "modal" }, function onPending() {
+              global.open(targetUrl, "_blank");
+              setStatus(
+                "Opened jobs list. Add Job popup will fill automatically. History: " +
+                  historyCount +
+                  "/5."
+              );
+            });
+            return;
+          }
+          global.open(targetUrl, "_blank");
           setStatus("Opened import target. History: " + historyCount + "/5.");
-        });
-        return;
-      }
-      if (!latestPayload) {
-        latestPayload = buildPayload();
-      }
-      savePayload(latestPayload, function onSave(ok, historyCount) {
-        global.open(selectorsApi.WORKCENTER_IMPORT.teamallenssmAddUrl, "_blank");
-        setStatus("Opened import target. History: " + historyCount + "/5.");
-      });
+        }
+
+        const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+        if (editorParsed.ok) {
+          latestPayload = editorParsed.payload;
+          savePayload(latestPayload, afterSave);
+          return;
+        }
+        if (!latestPayload) {
+          latestPayload = buildPayload();
+        }
+        savePayload(latestPayload, afterSave);
       }
 
       if (settingsApi) {
@@ -717,11 +738,11 @@
             setStatus("Enter access code in Settings first.");
             return;
           }
-          openTeamAllen();
+          openTeamAllenTarget(settings);
         });
         return;
       }
-      openTeamAllen();
+      openTeamAllenTarget(null);
     });
 
     if (settingsApi) {
