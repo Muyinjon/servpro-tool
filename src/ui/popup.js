@@ -62,13 +62,6 @@
       const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
       const targetUrl =
         openVia === "modal" ? wi.teamallenssmListUrl : wi.teamallenssmAddUrl;
-      if (openVia === "modal") {
-        settingsApi.setPendingAutoSubmit({ autoSave: false, openVia: "modal" }, function onPending() {
-          chrome.tabs.create({ url: targetUrl });
-          window.close();
-        });
-        return;
-      }
       chrome.tabs.create({ url: targetUrl });
       window.close();
     });

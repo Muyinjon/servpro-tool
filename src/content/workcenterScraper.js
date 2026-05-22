@@ -700,7 +700,9 @@
             return;
           }
           if (openVia === "modal" && settingsApi) {
-            settingsApi.setPendingAutoSubmit({ autoSave: false, openVia: "modal" }, function onPending() {
+            settingsApi.setPendingAutoSubmit(
+              { autoSave: false, openVia: "modal", consumedListClick: false },
+              function onPending() {
               global.open(targetUrl, "_blank");
               setPanelStatus(
                 "Opened jobs list. Add Job popup will fill automatically. History: " +

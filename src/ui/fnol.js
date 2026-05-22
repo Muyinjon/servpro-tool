@@ -673,7 +673,7 @@
         const targetUrl = teamAllenTargetUrl(openVia);
         if (openVia === "modal" || shouldAutoSave) {
           settingsApi.setPendingAutoSubmit(
-            { autoSave: shouldAutoSave, openVia: openVia },
+            { autoSave: shouldAutoSave, openVia: openVia, consumedListClick: false },
             function onPending() {
               chrome.tabs.create({ url: targetUrl }, function onTab() {
                 const notesHint =

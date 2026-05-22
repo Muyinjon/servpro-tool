@@ -5,6 +5,7 @@
   const PENDING_AUTO_SUBMIT_KEY = "servproUploadHelper.pendingTeamAllenAutoSubmit";
   const PENDING_NOTES_PASTE_KEY = "servproUploadHelper.pendingTeamAllenNotesPaste";
   const ACTIVATION_CODE = "TeamAllenSSM";
+  const PENDING_STALE_MS = 10 * 60 * 1000;
 
   const DEFAULT_SETTINGS = {
     darkMode: false,
@@ -88,15 +89,33 @@
 
   function normalizePendingOptions(options) {
     if (options === true) {
-      return { autoSave: true, openVia: "page" };
+      return { autoSave: true, openVia: "page", consumedListClick: true };
     }
     if (!options || typeof options !== "object") {
       return null;
     }
     return {
       autoSave: Boolean(options.autoSave),
-      openVia: options.openVia === "modal" ? "modal" : "page"
+      openVia: options.openVia === "modal" ? "modal" : "page",
+      consumedListClick: options.consumedListClick === true
     };
+  }
+
+  function isPendingStaleOnList(pending) {
+    if (!pending || pending.openVia !== "modal") {
+      return false;
+    }
+    if (pending.consumedListClick === undefined) {
+      return true;
+    }
+    if (!pending.at) {
+      return true;
+    }
+    const at = Date.parse(pending.at);
+    if (Number.isNaN(at)) {
+      return true;
+    }
+    return Date.now() - at > PENDING_STALE_MS;
   }
 
   function getSettings(callback) {
@@ -168,13 +187,38 @@
       ? {
           at: new Date().toISOString(),
           autoSave: normalized.autoSave,
-          openVia: normalized.openVia
+          openVia: normalized.openVia,
+          consumedListClick: normalized.consumedListClick === true
         }
       : null;
     storage.set({ [PENDING_AUTO_SUBMIT_KEY]: value }, function onSaved() {
       if (typeof callback === "function") {
         callback(!global.chrome.runtime.lastError);
       }
+    });
+  }
+
+  function patchPendingAutoSubmit(partial, callback) {
+    const storage = getStorage();
+    if (!storage) {
+      if (typeof callback === "function") {
+        callback(false);
+      }
+      return;
+    }
+    getPendingAutoSubmit(function onPending(pending) {
+      if (!pending) {
+        if (typeof callback === "function") {
+          callback(false);
+        }
+        return;
+      }
+      const next = Object.assign({}, pending, partial || {});
+      storage.set({ [PENDING_AUTO_SUBMIT_KEY]: next }, function onSaved() {
+        if (typeof callback === "function") {
+          callback(!global.chrome.runtime.lastError, next);
+        }
+      });
     });
   }
 
@@ -259,8 +303,11 @@
     saveSettings,
     activateWithCode,
     setPendingAutoSubmit,
+    patchPendingAutoSubmit,
     getPendingAutoSubmit,
     clearPendingAutoSubmit,
+    isPendingStaleOnList,
+    PENDING_STALE_MS,
     setPendingNotesPaste,
     getPendingNotesPaste,
     clearPendingNotesPaste,

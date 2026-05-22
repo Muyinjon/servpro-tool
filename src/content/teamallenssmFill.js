@@ -541,10 +541,20 @@
       if (!pending || pending.openVia !== "modal") {
         return;
       }
+      if (settingsApi.isPendingStaleOnList && settingsApi.isPendingStaleOnList(pending)) {
+        settingsApi.clearPendingAutoSubmit();
+        return;
+      }
+      if (pending.consumedListClick === true) {
+        return;
+      }
       if (setStatus) {
         setStatus("Opening Add Job popup…");
       }
       clickAddJobButtonWithRetry(function onClicked(ok) {
+        if (ok && settingsApi.patchPendingAutoSubmit) {
+          settingsApi.patchPendingAutoSubmit({ consumedListClick: true });
+        }
         if (!ok && setStatus) {
           setStatus("Add Job button not found on list page.");
         }
@@ -1578,7 +1588,11 @@
       if (!usesModalAddJobUi() || !settingsApi || !listPanelHasPayload) {
         return;
       }
-      settingsApi.setPendingAutoSubmit({ autoSave: false, openVia: "modal" });
+      settingsApi.setPendingAutoSubmit({
+        autoSave: false,
+        openVia: "modal",
+        consumedListClick: true
+      });
     }
 
     document.addEventListener("mousedown", function onAddJobMouseDown(e) {
@@ -2018,8 +2032,12 @@
         tryPendingNotesPasteOnEditBoot(null);
       }
     } else if (isOnListPage()) {
-      createListPagePanel();
-      tryPendingModalAddJobClick(null);
+      settingsApi.getPendingAutoSubmit(function onPending(pending) {
+        if (pending && !cachedSettings.hideListPanel) {
+          createListPagePanel();
+        }
+        tryPendingModalAddJobClick(null);
+      });
     }
   }
 
