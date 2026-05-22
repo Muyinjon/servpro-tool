@@ -36,13 +36,13 @@ Chrome extension for ServPro WorkCenter that helps users quickly apply one image
 Click the extension icon to open the popup.
 
 - **First Notice of Loss** — dedicated page (`fnol.html`) with a two-panel layout: job history (name + entered timestamp) and the entry form.
-- **Settings** — access code, display preferences, add-job mode (list popup vs full page), FNOL auto-save, and a link to open the FNOL page.
+- **Settings** — access code, display preferences, add-job mode (list popup vs full page), FNOL auto-save, FNOL post-save notes, and a link to open the FNOL page.
 
 Enter access code **`TeamAllenSSM`** in Settings to unlock import tools and FNOL.
 
 - Coordinator defaults on the import helper panel: **Non-default**, **Default recon**, or **Default mitigation**.
 - **Add job opens as** (default: **List popup**): jobs list + Add Job modal. **Full page** opens `jobs1_add.php` directly.
-- **FNOL page**: sectioned form (basic, address, insurance & adjuster, notes), **Copy as normal text**, **Jobs entered** list with timestamps; submit opens TeamAllen and auto-fills (auto-save optional in Settings).
+- **FNOL page**: sectioned form (basic, address, insurance & adjuster, notes), live **500-character** notes counter (includes adjuster backup text), **Copy as normal text**, **Jobs entered** list with timestamps; submit opens TeamAllen and auto-fills (auto-save optional in Settings). Notes are added **after** the job is saved on TeamAllen (auto-paste when the Notes grid is ready, or **Add notes from FNOL** on the import helper).
 - On **edit** pages, use **Copy current job (JSON)** or **Copy as normal text**; address is read from the visible address grid (opens inline edit if needed).
 - JSON panels also include **Copy as normal text** beside **Copy JSON**.
 
@@ -98,8 +98,14 @@ Metadata only in JSON (not filled on add form): `projectName`, `projectId`, `pro
 ### Address handling
 
 - Street/city/state/zip come from `MainContent_txt_*` inputs first; header `txt_FullAddress` is parsed only as fallback.
-- TeamAllen address fields use dynamic IDs (`value_Address1_*`); the filler and edit-page copy target the **visible** address grid row and open inline edit when values are display-only.
-- FNOL `lossTypeValue` is stored when you pick a loss type from the dropdown so TeamAllen autofill can select by option value.
+- TeamAllen customer address fields use dynamic IDs (`value_Address1_*`, `value_AddLocation_*`, `value_BillAddress_*`) and display cells (`edit{recordId}_Address1`, etc.). **Copy current job** / **Copy as normal text** scrape both inline inputs and display cells. On **add job** (full page or list modal) and **edit job**, the filler opens the visible address grid row for inline edit, then sets **Add Location** (option value `1` = Residence, `2` = Commercial), checks **Bill Address**, and fills street/city/state/zip.
+- FNOL stores `addLocation` / `addLocationValue` from property type (Residential/Commercial) plus `lossTypeValue` when you pick a loss type so TeamAllen autofill can select by option value.
+
+### FNOL notes (TeamAllen)
+
+- TeamAllen limits notes to **500 characters**. The FNOL form shows a live counter (merged notes + adjuster backup) and blocks submit when over the limit.
+- On submit, note text is queued in extension storage. After auto-save (if enabled), the import helper polls for the Notes grid (up to ~30s) and runs the Add Notes → Misc → save flow automatically. Turn this off in Settings with **After FNOL save, automatically add notes when Notes section is ready**.
+- If auto-paste times out or auto-save is off, use **Add notes from FNOL** on the add-job or edit-job helper when the Notes section is visible.
 
 ### Notes
 

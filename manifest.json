@@ -71,6 +71,7 @@
         "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
         "src/lib/payloadPlainText.js",
+        "src/lib/fnolNotes.js",
         "src/ui/importPayloadPanel.js",
         "src/content/teamallenssmFill.js"
       ],

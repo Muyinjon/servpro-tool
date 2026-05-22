@@ -1,8 +1,29 @@
 (function initFnolNotes(global) {
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
 
+  const NOTES_MAX_LENGTH = 500;
+
   function normalizeText(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function truncateNoteText(text, maxLength) {
+    const limit = typeof maxLength === "number" ? maxLength : NOTES_MAX_LENGTH;
+    const normalized = normalizeText(text);
+    if (normalized.length <= limit) {
+      return { text: normalized, trimmed: false };
+    }
+    return {
+      text: normalized.slice(0, limit),
+      trimmed: true
+    };
+  }
+
+  function getNoteTextFromPayload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return "";
+    }
+    return normalizeText(payload.notes || payload.notesUser);
   }
 
   function buildAdjusterBackupBlock(adjuster) {
@@ -38,6 +59,9 @@
   }
 
   root.fnolNotes = {
+    NOTES_MAX_LENGTH,
+    truncateNoteText,
+    getNoteTextFromPayload,
     buildFnolNotes,
     buildAdjusterBackupBlock
   };

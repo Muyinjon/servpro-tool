@@ -45,7 +45,8 @@
     coordinator: "value_Coordinator_1",
     reconManager: "value_fkReconManId_1",
     insuranceCarrier: "value_InsuranceCompany_1",
-    lossType: "value_fkLossType_1"
+    lossType: "value_fkLossType_1",
+    jobStatus: "value_JobStatus_1"
   };
 
   const LOSS_TYPE_ALIASES = {
@@ -108,6 +109,17 @@
     }
     if (key.indexOf("residential") !== -1) {
       return "Residence";
+    }
+    return "";
+  }
+
+  function mapAddLocationValueForTeamAllen(propertyType) {
+    const key = normalizeKey(propertyType);
+    if (key.indexOf("commercial") !== -1) {
+      return "2";
+    }
+    if (key.indexOf("residential") !== -1 || key.indexOf("residence") !== -1) {
+      return "1";
     }
     return "";
   }
@@ -263,6 +275,7 @@
     mapLossTypeForTeamAllen,
     mapCoordinatorForTeamAllen,
     mapAddLocationForTeamAllen,
+    mapAddLocationValueForTeamAllen,
     isPlausibleBusinessName,
     isPlausibleClaimNumber,
     isFullAddressLine,

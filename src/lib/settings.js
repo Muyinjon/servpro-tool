@@ -3,6 +3,7 @@
 
   const SETTINGS_KEY = "servproUploadHelper.settings";
   const PENDING_AUTO_SUBMIT_KEY = "servproUploadHelper.pendingTeamAllenAutoSubmit";
+  const PENDING_NOTES_PASTE_KEY = "servproUploadHelper.pendingTeamAllenNotesPaste";
   const ACTIVATION_CODE = "TeamAllenSSM";
 
   const DEFAULT_SETTINGS = {
@@ -13,6 +14,7 @@
     defaultJobModeOnFill: "none",
     teamAllenAddJobUi: "modal",
     fnolAutoSave: true,
+    fnolPasteNotesAfterSave: true,
     showEditCopyButton: true
   };
 
@@ -195,6 +197,47 @@
     setPendingAutoSubmit(false, callback);
   }
 
+  function setPendingNotesPaste(noteText, callback) {
+    const storage = getStorage();
+    if (typeof noteText === "function") {
+      callback = noteText;
+      noteText = "";
+    }
+    if (!storage) {
+      if (typeof callback === "function") {
+        callback(false);
+      }
+      return;
+    }
+    const text = String(noteText || "").trim();
+    const value = text
+      ? {
+          at: new Date().toISOString(),
+          text: text
+        }
+      : null;
+    storage.set({ [PENDING_NOTES_PASTE_KEY]: value }, function onSaved() {
+      if (typeof callback === "function") {
+        callback(!global.chrome.runtime.lastError);
+      }
+    });
+  }
+
+  function getPendingNotesPaste(callback) {
+    const storage = getStorage();
+    if (!storage) {
+      callback(null);
+      return;
+    }
+    storage.get([PENDING_NOTES_PASTE_KEY], function onLoad(result) {
+      callback((result && result[PENDING_NOTES_PASTE_KEY]) || null);
+    });
+  }
+
+  function clearPendingNotesPaste(callback) {
+    setPendingNotesPaste("", callback);
+  }
+
   function isTeamAllenActivated(settings) {
     const merged = mergeSettings(settings);
     return merged.teamAllenActivated === true;
@@ -207,6 +250,7 @@
   root.settings = {
     SETTINGS_KEY,
     PENDING_AUTO_SUBMIT_KEY,
+    PENDING_NOTES_PASTE_KEY,
     ACTIVATION_CODE,
     DEFAULT_SETTINGS,
     mergeSettings,
@@ -216,6 +260,9 @@
     setPendingAutoSubmit,
     getPendingAutoSubmit,
     clearPendingAutoSubmit,
+    setPendingNotesPaste,
+    getPendingNotesPaste,
+    clearPendingNotesPaste,
     resolveTeamAllenOpenVia,
     resetActivation,
     isTeamAllenActivated

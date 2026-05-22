@@ -36,27 +36,19 @@
       line("Pay type", payload.payType),
       line("Bus. unit", payload.businessUnit),
       line("Loss type", payload.lossType || payload.LossType),
+      line("Job status", payload.jobStatus),
       line("Coordinator", payload.coordinator)
     ]);
 
-    const addressParts = [];
     const a1 = normalizeText(payload.address1 || payload.Address1 || payload.address);
     const a2 = normalizeText(payload.address2 || payload.Address2);
     const city = normalizeText(payload.city || payload.City);
     const state = normalizeText(payload.state || payload.State);
     const zip = normalizeText(payload.zip || payload.Zip);
-    if (a1) {
-      addressParts.push(line("Address 1", a1));
-    }
-    if (a2) {
-      addressParts.push(line("Address 2", a2));
-    }
-    const cityLine = [city, state].filter(Boolean).join(", ");
-    const cityZip = [cityLine, zip].filter(Boolean).join(cityLine && zip ? " " : "");
-    if (cityZip) {
-      addressParts.push(line("City / State / Zip", cityZip));
-    }
-    const address = addressParts.length ? section("Address", addressParts) : "";
+    const stateZip = [state, zip].filter(Boolean).join(" ");
+    const cityStateZip = [city, stateZip].filter(Boolean).join(", ");
+    const addressLines = [a1, a2, cityStateZip].filter(Boolean);
+    const address = addressLines.length ? section("Address", addressLines) : "";
 
     const insurance = section("Insurance & adjuster", [
       line("Insurance company", payload.insuranceCarrier || payload.insurance),

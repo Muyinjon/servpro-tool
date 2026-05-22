@@ -23,6 +23,7 @@
     "hideAddEditHelperPanel",
     "autoCollapsePanels",
     "fnolAutoSave",
+    "fnolPasteNotesAfterSave",
     "showEditCopyButton"
   ];
 

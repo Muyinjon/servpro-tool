@@ -4,61 +4,77 @@
 
 body {
   margin: 0;
-  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #0f172a;
   background: #e8eef4;
 }
 
 .fnol-page {
-  max-width: 1200px;
+  max-width: min(1680px, calc(100vw - 24px));
   margin: 0 auto;
-  padding: 24px 20px 48px;
+  padding: 12px 16px 16px;
 }
 
+/* —— Compact toolbar header —— */
 .fnol-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .fnol-header-main {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .fnol-header img {
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.fnol-header-titles {
+  min-width: 0;
 }
 
 .fnol-header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .fnol-header .sub {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #64748b;
-  font-size: 14px;
-  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fnol-nav a {
   display: inline-block;
-  padding: 8px 14px;
+  padding: 6px 12px;
   border: 1px solid #cbd5e1;
   background: #fff;
   color: #334e68;
-  border-radius: 8px;
+  border-radius: 6px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .fnol-nav a:hover {
@@ -66,10 +82,11 @@ body {
   background: #f8fafc;
 }
 
+/* —— Main layout: sidebar + form —— */
 .fnol-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 320px) 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(220px, 240px) minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
 }
 
@@ -77,39 +94,56 @@ body {
   .fnol-layout {
     grid-template-columns: 1fr;
   }
+
+  .fnol-header .sub {
+    white-space: normal;
+  }
 }
 
 .fnol-panel {
   background: #fff;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .fnol-panel h2 {
-  margin: 0 0 14px;
-  font-size: 16px;
+  margin: 0 0 8px;
+  font-size: 13px;
   font-weight: 600;
   color: #334e68;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* —— Sticky jobs sidebar —— */
+.fnol-history-panel {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .fnol-job-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 70vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
 .fnol-job-empty {
-  padding: 20px 12px;
+  padding: 12px 8px;
   text-align: center;
   color: #64748b;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   border: 1px dashed #cbd5e1;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #f8fafc;
 }
 
@@ -117,11 +151,11 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -143,20 +177,20 @@ body {
 
 .fnol-job-name {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 13px;
   color: #0f172a;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   word-break: break-word;
 }
 
 .fnol-job-time {
-  font-size: 13px;
+  font-size: 11px;
   color: #475569;
   margin: 0 0 2px;
 }
 
 .fnol-job-meta {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   margin: 0;
 }
@@ -166,9 +200,9 @@ body {
   border: 1px solid #fecaca;
   background: #fff;
   color: #b42318;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
   cursor: pointer;
   font: inherit;
 }
@@ -177,45 +211,118 @@ body {
   background: #fef2f2;
 }
 
+/* —— Form panel —— */
 .fnol-form-panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+#fnolForm {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 2×2 section grid on wide screens */
+.fnol-form-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) and (max-width: 1279px) {
+  .fnol-form-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "basic address"
+      "insurance notes";
+  }
+
+  .fnol-section-basic {
+    grid-area: basic;
+  }
+
+  .fnol-section-address {
+    grid-area: address;
+  }
+
+  .fnol-section-insurance {
+    grid-area: insurance;
+  }
+
+  .fnol-section-notes {
+    grid-area: notes;
+  }
+}
+
+@media (min-width: 1280px) {
+  .fnol-form-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "basic address"
+      "insurance notes";
+  }
+
+  .fnol-section-basic {
+    grid-area: basic;
+  }
+
+  .fnol-section-address {
+    grid-area: address;
+  }
+
+  .fnol-section-insurance {
+    grid-area: insurance;
+  }
+
+  .fnol-section-notes {
+    grid-area: notes;
+  }
 }
 
 .fnol-section {
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 16px 18px 10px;
-  margin: 0 0 16px;
+  border-radius: 8px;
+  padding: 8px 10px 6px;
+  margin: 0;
   background: #fafbfc;
+  min-width: 0;
 }
 
 .fnol-section legend {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: #1e40af;
-  padding: 0 8px;
+  padding: 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .field {
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 .field label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #475569;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 
 .field input,
 .field select,
 .field textarea {
   width: 100%;
-  padding: 9px 11px;
+  padding: 6px 8px;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: 6px;
   font: inherit;
+  font-size: 13px;
   background: #fff;
 }
 
@@ -224,47 +331,118 @@ body {
 .field textarea:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .field textarea {
-  min-height: 88px;
+  min-height: 48px;
   resize: vertical;
 }
 
-.grid2 {
+.field-notes textarea {
+  min-height: 44px;
+}
+
+.fnol-notes-counter {
+  font-size: 11px;
+  color: #64748b;
+  margin: 4px 0 0;
+  text-align: right;
+}
+
+.fnol-notes-counter.is-over {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Responsive field grids inside sections */
+.fnol-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.fnol-grid .field-span2 {
+  grid-column: span 2;
+}
+
+.fnol-grid .field-span-all {
+  grid-column: 1 / -1;
+}
+
+.fnol-grid-address {
+  grid-template-columns: 1fr minmax(72px, 0.45fr) minmax(88px, 0.55fr);
 }
 
 @media (max-width: 560px) {
-  .grid2 {
+  .fnol-grid {
     grid-template-columns: 1fr;
+  }
+
+  .fnol-grid .field-span2,
+  .fnol-grid .field-span-all {
+    grid-column: 1;
+  }
+
+  .fnol-grid-address {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fnol-grid-address .field-span-all {
+    grid-column: 1 / -1;
+  }
+
+  .fnol-grid-address .field:first-of-type:not(.field-span-all) {
+    grid-column: 1 / -1;
   }
 }
 
 .hint {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
-  margin-top: 6px;
-  line-height: 1.4;
+  margin: 4px 0 0;
+  line-height: 1.3;
+}
+
+/* —— Sticky action bar —— */
+.fnol-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 10px -12px 0;
+  padding: 8px 12px 10px;
+  background: linear-gradient(to top, #fff 85%, rgba(255, 255, 255, 0.97));
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 10px 10px;
+}
+
+.fnol-action-bar .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.fnol-action-bar .status {
+  margin: 6px 0 0;
+  font-size: 13px;
+  min-height: 1.2em;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
 }
 
 .btn {
   border: 1px solid #1976d2;
   background: #1976d2;
   color: #fff;
-  border-radius: 8px;
-  padding: 10px 18px;
+  border-radius: 6px;
+  padding: 7px 14px;
   font: inherit;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -284,10 +462,8 @@ body {
 }
 
 .status {
-  margin-top: 14px;
-  font-size: 14px;
+  font-size: 13px;
   color: #334e68;
-  min-height: 1.4em;
 }
 
 .status.error {
@@ -298,6 +474,7 @@ body {
   color: #027a48;
 }
 
+/* —— Lock overlay —— */
 .fnol-locked-overlay {
   position: absolute;
   inset: 0;
@@ -306,8 +483,8 @@ body {
   align-items: center;
   justify-content: center;
   background: rgba(248, 250, 252, 0.96);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 16px;
 }
 
 .fnol-locked-overlay.is-active {
@@ -316,47 +493,44 @@ body {
 
 .fnol-unlock-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 380px;
   text-align: left;
   background: #fff;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 20px 22px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
 }
 
 .fnol-unlock-card h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
+  margin: 0 0 6px;
+  font-size: 16px;
 }
 
 .fnol-unlock-hint {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: #64748b;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .fnol-unlock-card .field label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   color: #475569;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .fnol-unlock-card .field input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
 .fnol-unlock-card .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .fnol-unlock-card .actions .btn.secondary {
@@ -367,8 +541,7 @@ body {
 }
 
 .fnol-form-panel.is-locked #fnolForm,
-.fnol-form-panel.is-locked .actions,
-.fnol-form-panel.is-locked .status {
+.fnol-form-panel.is-locked .fnol-action-bar {
   pointer-events: none;
   opacity: 0.5;
 }

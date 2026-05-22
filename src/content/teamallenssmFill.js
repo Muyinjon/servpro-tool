@@ -3,6 +3,7 @@
   const selectorsApi = root.selectors;
   const fieldsApi = root.workcenterFields || {};
   const settingsApi = root.settings;
+  const fnolNotesApi = root.fnolNotes;
 
   if (!selectorsApi) {
     return;
@@ -16,6 +17,21 @@
   const mapLossTypeForTeamAllen = selectorsApi.mapLossTypeForTeamAllen || fieldsApi.mapLossTypeForTeamAllen;
   const mapCoordinatorForTeamAllen = selectorsApi.mapCoordinatorForTeamAllen || fieldsApi.mapCoordinatorForTeamAllen;
   const mapAddLocationForTeamAllen = selectorsApi.mapAddLocationForTeamAllen || fieldsApi.mapAddLocationForTeamAllen;
+  const mapAddLocationValueForTeamAllen =
+    selectorsApi.mapAddLocationValueForTeamAllen || fieldsApi.mapAddLocationValueForTeamAllen;
+  const ADDRESS_GRID_INLINE_SELECTOR =
+    'input[id^="value_Address1_"], input[id^="value_City_"], input[id^="value_State_"], input[id^="value_Zip_"], select[id^="value_AddLocation_"]';
+  const ADDRESS_FIELD_KEYS = new Set([
+    "address1",
+    "address2",
+    "city",
+    "state",
+    "zip",
+    "yearBuilt",
+    "addLocation",
+    "billAddress"
+  ]);
+  const ADDRESS_TEXT_FIELD_KEYS = ["address1", "address2", "city", "state", "zip", "yearBuilt"];
   const isPlausibleBusinessName = fieldsApi.isPlausibleBusinessName || selectorsApi.isPlausibleBusinessName || function always(value) {
     return Boolean(normalizeText(value));
   };
@@ -111,43 +127,104 @@
     }) || null;
   }
 
-  function readAddressValueFromRow(row, fieldName) {
-    if (!row || !fieldName) {
+  function readElementDisplayText(el) {
+    if (!el) {
       return "";
     }
-    const input = row.querySelector(
-      'input[id^="value_' + fieldName + '_"], select[id^="value_' + fieldName + '_"]'
-    );
-    if (input) {
-      if (input.tagName === "SELECT") {
-        const opt = input.options[input.selectedIndex];
-        return normalizeText(opt ? opt.textContent : "");
-      }
-      return normalizeText(input.value);
+    return normalizeText(el.getAttribute("val") || el.textContent);
+  }
+
+  function readAddressDisplayCell(recordId, fieldName, scopeRoot) {
+    if (!recordId || !/^\d+$/.test(String(recordId)) || !fieldName) {
+      return "";
     }
-    const fieldVariants = [fieldName, fieldName.toLowerCase(), fieldName.toUpperCase()];
-    for (let i = 0; i < fieldVariants.length; i += 1) {
-      const variant = fieldVariants[i];
-      const display = row.querySelector('[data-field="' + variant + '"]');
-      if (!display) {
-        continue;
-      }
-      const span = display.querySelector('span[id$="_' + fieldName + '"], span[id*="_' + fieldName + '_"]');
-      const target = span || display;
-      const valAttr = target.getAttribute && target.getAttribute("val");
-      if (valAttr) {
-        return normalizeText(valAttr);
-      }
-      const lookup = display.querySelector(".r-lookup-value");
-      if (lookup) {
-        return normalizeText(lookup.textContent);
-      }
-      const text = normalizeText(display.textContent);
-      if (text) {
-        return text;
+    const id = "edit" + recordId + "_" + fieldName;
+    const root = scopeRoot || document;
+    let el = null;
+    if (root.querySelector) {
+      el = root.querySelector('[id="' + id + '"]');
+    }
+    if (!el && (!scopeRoot || scopeRoot === document)) {
+      el = document.getElementById(id);
+    }
+    return readElementDisplayText(el);
+  }
+
+  function findAddressRecordIdFromDisplay() {
+    const cells = document.querySelectorAll('[id^="edit"][id*="_Address1"]');
+    for (let i = 0; i < cells.length; i += 1) {
+      const match = String(cells[i].id || "").match(/^edit(\d+)_Address1$/i);
+      if (match) {
+        return match[1];
       }
     }
     return "";
+  }
+
+  function readAddressValueFromRow(row, fieldName) {
+    if (!fieldName) {
+      return "";
+    }
+    if (row) {
+      const input = row.querySelector(
+        'input[id^="value_' + fieldName + '_"], select[id^="value_' + fieldName + '_"]'
+      );
+      if (input) {
+        if (input.tagName === "SELECT") {
+          const opt = input.options[input.selectedIndex];
+          return normalizeText(opt ? opt.textContent : "");
+        }
+        return normalizeText(input.value);
+      }
+      const fieldVariants = [fieldName, fieldName.toLowerCase(), fieldName.toUpperCase()];
+      for (let i = 0; i < fieldVariants.length; i += 1) {
+        const variant = fieldVariants[i];
+        const display = row.querySelector('[data-field="' + variant + '"]');
+        if (!display) {
+          continue;
+        }
+        const span = display.querySelector('span[id$="_' + fieldName + '"], span[id*="_' + fieldName + '_"]');
+        const target = span || display;
+        const valAttr = target.getAttribute && target.getAttribute("val");
+        if (valAttr) {
+          return normalizeText(valAttr);
+        }
+        const lookup = display.querySelector(".r-lookup-value");
+        if (lookup) {
+          return normalizeText(lookup.textContent);
+        }
+        const text = normalizeText(display.textContent);
+        if (text) {
+          return text;
+        }
+      }
+      const recordId = row.getAttribute("data-record-id") || "";
+      if (/^\d+$/.test(recordId)) {
+        const scopedDisplay = row.querySelector('[id^="edit"][id$="_' + fieldName + '"]');
+        const fromScoped = readElementDisplayText(scopedDisplay);
+        if (fromScoped) {
+          return fromScoped;
+        }
+        const fromDisplayId = readAddressDisplayCell(recordId, fieldName, row);
+        if (fromDisplayId) {
+          return fromDisplayId;
+        }
+      }
+    }
+    return "";
+  }
+
+  function addressRowHasReadableDisplay(row) {
+    const rid = row && row.getAttribute("data-record-id");
+    if (!rid || !/^\d+$/.test(rid)) {
+      return false;
+    }
+    return Boolean(
+      readAddressDisplayCell(rid, "Address1") ||
+        readAddressDisplayCell(rid, "City") ||
+        readAddressDisplayCell(rid, "State") ||
+        readAddressDisplayCell(rid, "Zip")
+    );
   }
 
   function addressRowHasInlineInputs(row) {
@@ -163,7 +240,12 @@
 
   function getAddressFieldFromGrid(fieldName) {
     const row = getVisibleAddressGridRow();
-    return readAddressValueFromRow(row, fieldName);
+    const fromRow = readAddressValueFromRow(row, fieldName);
+    if (fromRow) {
+      return fromRow;
+    }
+    const fallbackRecordId = findAddressRecordIdFromDisplay();
+    return readAddressDisplayCell(fallbackRecordId, fieldName) || "";
   }
 
   function scrapePayloadFromPage() {
@@ -207,7 +289,11 @@
     }
     const rows = getAddressGridRows();
     const visibleRow = getVisibleAddressGridRow(rows);
-    if (!visibleRow || addressRowHasInlineInputs(visibleRow)) {
+    if (
+      !visibleRow ||
+      addressRowHasInlineInputs(visibleRow) ||
+      addressRowHasReadableDisplay(visibleRow)
+    ) {
       callback(scrapePayloadFromPage());
       return;
     }
@@ -264,6 +350,139 @@
       }
     }
     return false;
+  }
+
+  function noteTextFromPayload(payload) {
+    if (fnolNotesApi && fnolNotesApi.getNoteTextFromPayload) {
+      return fnolNotesApi.getNoteTextFromPayload(payload);
+    }
+    return normalizeText((payload && (payload.notes || payload.notesUser)) || "");
+  }
+
+  function pasteNotesFromPayload(payload, callback) {
+    let noteText = noteTextFromPayload(payload);
+    if (!noteText) {
+      callback(false, "No notes in payload to paste.");
+      return;
+    }
+    let trimSuffix = "";
+    if (fnolNotesApi && fnolNotesApi.truncateNoteText) {
+      const truncated = fnolNotesApi.truncateNoteText(noteText);
+      noteText = truncated.text;
+      if (truncated.trimmed) {
+        trimSuffix = " Note was trimmed to 500 characters.";
+      }
+    }
+
+    const addNotesBtn = document.querySelector('a[id^="inlineAdd"]');
+    if (!addNotesBtn || typeof addNotesBtn.click !== "function") {
+      callback(false, "Add Notes button not found — scroll to the Notes section and try again.");
+      return;
+    }
+    addNotesBtn.click();
+
+    let waited = 0;
+    const maxWait = 2000;
+    function waitForNotesTextarea() {
+      const textarea = document.querySelector('textarea[id^="value_Notes_"]');
+      if (textarea) {
+        textarea.focus();
+        textarea.value = noteText;
+        try {
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
+          textarea.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch (e) {
+          /* ignore */
+        }
+
+        const suffix = textarea.id.replace(/^value_Notes_/, "");
+        const typeSelect = document.getElementById("value_fkNoteTypeId_" + suffix) ||
+          document.querySelector('select[id^="value_fkNoteTypeId_"]');
+        if (typeSelect) {
+          try {
+            setSelectByValue(typeSelect, "1");
+          } catch (e) {
+            /* best-effort */
+          }
+        }
+
+        const saveLink = document.getElementById("saveLink" + suffix) ||
+          document.querySelector('a[id^="saveLink"]');
+        if (saveLink && typeof saveLink.click === "function") {
+          global.setTimeout(function clickSave() {
+            saveLink.click();
+            callback(true, "Note pasted and saved." + trimSuffix);
+          }, 120);
+        } else {
+          callback(false, "Note text filled but save link not found — click Save manually." + trimSuffix);
+        }
+        return;
+      }
+      waited += 100;
+      if (waited >= maxWait) {
+        callback(false, "Notes textarea did not appear — the Notes section may not be visible.");
+        return;
+      }
+      global.setTimeout(waitForNotesTextarea, 100);
+    }
+    global.setTimeout(waitForNotesTextarea, 100);
+  }
+
+  const NOTES_UI_POLL_MS = 500;
+  const NOTES_UI_POLL_MAX_MS = 30000;
+
+  function tryPendingNotesPaste(setStatus) {
+    if (!settingsApi || cachedSettings.fnolPasteNotesAfterSave === false) {
+      return;
+    }
+    settingsApi.getPendingNotesPaste(function onPending(pending) {
+      if (!pending || !normalizeText(pending.text)) {
+        return;
+      }
+      const noteText = normalizeText(pending.text);
+      let waited = 0;
+      function pollForNotesUi() {
+        const addNotesBtn = document.querySelector('a[id^="inlineAdd"]');
+        if (addNotesBtn) {
+          if (setStatus) {
+            setStatus("Adding notes from FNOL…");
+          }
+          pasteNotesFromPayload({ notes: noteText }, function onPasted(ok, msg) {
+            if (ok) {
+              settingsApi.clearPendingNotesPaste();
+            }
+            if (setStatus) {
+              setStatus(msg);
+            }
+          });
+          return;
+        }
+        waited += NOTES_UI_POLL_MS;
+        if (waited >= NOTES_UI_POLL_MAX_MS) {
+          if (setStatus) {
+            setStatus("Job saved. Click Add notes from FNOL when Notes section is visible.");
+          }
+          return;
+        }
+        global.setTimeout(pollForNotesUi, NOTES_UI_POLL_MS);
+      }
+      pollForNotesUi();
+    });
+  }
+
+  function tryPendingNotesPasteOnEditBoot(setStatus) {
+    if (!isOnEditJobPage() || !settingsApi || cachedSettings.fnolPasteNotesAfterSave === false) {
+      return;
+    }
+    settingsApi.getPendingNotesPaste(function onPending(pending) {
+      if (!pending || !normalizeText(pending.text)) {
+        return;
+      }
+      if (!document.querySelector('a[id^="inlineAdd"]')) {
+        return;
+      }
+      tryPendingNotesPaste(setStatus);
+    });
   }
 
   function isTopFrame() {
@@ -354,25 +573,37 @@
         if (setStatus) {
           setStatus(shouldSave ? "Auto-fill: filling form…" : "Auto-fill: filling form (save manually)…");
         }
-        const fillResult = fillFromPayload(payload, defaultMode);
-        global.setTimeout(function afterFill() {
-          let saved = false;
-          if (shouldSave) {
-            saved = clickTeamAllenSaveButton();
-          }
-          settingsApi.clearPendingAutoSubmit();
-          const msg =
-            "Auto-fill: filled " + fillResult.filled + " fields." +
-            (shouldSave
-              ? saved
-                ? " Save clicked."
-                : " Save button not found — click Save manually."
-              : "") +
-            (fillResult.missing.length ? " Missing: " + fillResult.missing.join(", ") + "." : "");
-          if (setStatus) {
-            setStatus(msg);
-          }
-        }, 450);
+        runFillWithAddressPrep(payload, defaultMode, function onFilled(fillResult) {
+          global.setTimeout(function afterFill() {
+            let saved = false;
+            if (shouldSave) {
+              saved = clickTeamAllenSaveButton();
+            }
+            settingsApi.clearPendingAutoSubmit();
+            const msg =
+              "Auto-fill: filled " + fillResult.filled + " fields." +
+              (shouldSave
+                ? saved
+                  ? " Save clicked."
+                  : " Save button not found — click Save manually."
+                : "") +
+              formatFillMissingMessage(fillResult.missing);
+            if (setStatus) {
+              setStatus(msg);
+            }
+            if (shouldSave && saved) {
+              tryPendingNotesPaste(setStatus);
+            } else {
+              settingsApi.getPendingNotesPaste(function onNotesPending(pending) {
+                if (pending && normalizeText(pending.text) && setStatus) {
+                  setStatus(
+                    msg + " Click Add notes from FNOL when Notes section is visible."
+                  );
+                }
+              });
+            }
+          }, 450);
+        });
       });
     });
   }
@@ -660,9 +891,15 @@
       insuranceCarrier: firstNonEmpty([payload.insuranceCarrier, payload.InsuranceCompany, payload.insurance]),
       lossType: firstNonEmpty([payload.lossType, payload.LossType]),
       coordinator: firstNonEmpty([payload.coordinator, payload.Coordinator]),
+      coordinatorValue: firstNonEmpty([payload.coordinatorValue, payload.CoordinatorValue]),
+      jobStatus: firstNonEmpty([payload.jobStatus, payload.JobStatus]),
       addLocation: firstNonEmpty([
         payload.addLocation,
         mapAddLocationForTeamAllen ? mapAddLocationForTeamAllen(propertyTypeRaw) : ""
+      ]),
+      addLocationValue: firstNonEmpty([
+        payload.addLocationValue,
+        mapAddLocationValueForTeamAllen ? mapAddLocationValueForTeamAllen(propertyTypeRaw) : ""
       ]),
       billAddress: payload.billAddress !== false
     };
@@ -782,17 +1019,202 @@
     "lossType",
     "coordinator",
     "reconManager",
-    "addLocation"
+    "addLocation",
+    "jobStatus"
   ];
 
-  function fillFromPayload(payload, defaultMode) {
+  function formatFillMissingMessage(missing) {
+    if (!missing || !missing.length) {
+      return "";
+    }
+    const addressMissing = [];
+    const otherMissing = [];
+    missing.forEach(function eachKey(key) {
+      if (ADDRESS_FIELD_KEYS.has(key)) {
+        addressMissing.push(key);
+      } else {
+        otherMissing.push(key);
+      }
+    });
+    const parts = [];
+    if (otherMissing.length) {
+      parts.push(" Missing: " + otherMissing.join(", ") + ".");
+    }
+    if (addressMissing.length) {
+      parts.push(" Address missing: " + addressMissing.join(", ") + ".");
+    }
+    return parts.join("");
+  }
+
+  function mergeFillResults(mainResult, addressResult) {
+    const main = mainResult || { filled: 0, missing: [], addressSummary: "" };
+    const address = addressResult || { filled: 0, missing: [], addressSummary: "" };
+    return {
+      filled: main.filled + address.filled,
+      missing: main.missing.concat(address.missing),
+      addressSummary: address.addressSummary || main.addressSummary || ""
+    };
+  }
+
+  function visibleAddressRowHasInlineInputs(row) {
+    const targetRow = row || getVisibleAddressGridRow();
+    if (!targetRow) {
+      return false;
+    }
+    return Boolean(targetRow.querySelector(ADDRESS_GRID_INLINE_SELECTOR));
+  }
+
+  function waitForAddressInlineInputs(callback, maxMs, elapsed) {
+    const limit = typeof maxMs === "number" ? maxMs : 2000;
+    const waited = typeof elapsed === "number" ? elapsed : 0;
+    if (visibleAddressRowHasInlineInputs()) {
+      callback(true);
+      return;
+    }
+    if (waited >= limit) {
+      callback(false);
+      return;
+    }
+    global.setTimeout(function retry() {
+      waitForAddressInlineInputs(callback, limit, waited + 100);
+    }, 100);
+  }
+
+  function resolveBillAddressInRow() {
+    const map = selectorsApi.TEAMALLENSSM_FIELD_MAP || {};
+    const row = getVisibleAddressGridRow();
+    if (row && map.billAddress) {
+      const inRow = row.querySelector('[id^="' + map.billAddress + '"]');
+      if (inRow) {
+        return resolveFillControl(inRow);
+      }
+      const roleCheckbox = row.querySelector('[role="checkbox"]');
+      if (roleCheckbox) {
+        return resolveFillControl(roleCheckbox);
+      }
+    }
+    return resolveElementByMapValue(map.billAddress);
+  }
+
+  function setBillAddressInRow(checked) {
+    const control = resolveBillAddressInRow();
+    if (!control) {
+      return false;
+    }
+    if (setCheckboxValue(control, checked)) {
+      return true;
+    }
+    if (typeof control.click === "function") {
+      const wantChecked = Boolean(checked);
+      if (control.checked !== wantChecked) {
+        control.click();
+      }
+      if (control.checked !== wantChecked) {
+        control.click();
+      }
+      return control.checked === wantChecked;
+    }
+    return false;
+  }
+
+  function fillAddressGridFromSource(source) {
+    const map = selectorsApi.TEAMALLENSSM_FIELD_MAP || {};
+    let filled = 0;
+    const missing = [];
+
+    if (source.addLocation || source.addLocationValue) {
+      const addLocationSelect = resolveElementByMapValue(map.addLocation);
+      const addLocationOk = setSelectField(
+        addLocationSelect,
+        source.addLocation,
+        source.addLocationValue
+      );
+      if (addLocationOk) {
+        filled += 1;
+      } else {
+        missing.push("addLocation");
+      }
+    }
+
+    if (source.billAddress !== false && map.billAddress) {
+      if (setBillAddressInRow(true)) {
+        filled += 1;
+      } else {
+        missing.push("billAddress");
+      }
+    }
+
+    ADDRESS_TEXT_FIELD_KEYS.forEach(function eachField(key) {
+      try {
+        const elementId = map[key];
+        if (!elementId) {
+          return;
+        }
+        const value = source[key];
+        if (!value) {
+          return;
+        }
+        const input = resolveElementByMapValue(elementId);
+        const ok = setInputValue(input, value);
+        if (ok) {
+          filled += 1;
+        } else {
+          missing.push(key);
+        }
+      } catch (error) {
+        missing.push(key);
+      }
+    });
+
+    return {
+      filled: filled,
+      missing: missing,
+      addressSummary: formatAddressSummary(source)
+    };
+  }
+
+  function needsAddressGridPrep(payload) {
+    return (isOnAddJobPage() || isOnEditJobPage()) && payloadTouchesAddressGrid(payload);
+  }
+
+  function runFillWithAddressPrep(payload, defaultMode, callback) {
+    if (!needsAddressGridPrep(payload)) {
+      callback(fillFromPayload(payload, defaultMode));
+      return;
+    }
+    prepareAddressGridForFill(payload, function afterPrepare() {
+      waitForAddressInlineInputs(function onReady() {
+        const source = buildSource(payload);
+        const addressResult = fillAddressGridFromSource(source);
+        const mainResult = fillFromPayload(payload, defaultMode, { skipAddress: true });
+        const merged = mergeFillResults(mainResult, addressResult);
+        if (!onReady && addressResult.missing.length) {
+          merged.missing.push("addressGridInputs");
+        }
+        callback(merged);
+      });
+    });
+  }
+
+  function fillFromPayload(payload, defaultMode, options) {
+    const opts = options || {};
+    const skipAddress = Boolean(opts.skipAddress);
     const map = selectorsApi.TEAMALLENSSM_FIELD_MAP || {};
     if (!payload || typeof payload !== "object") {
       return { filled: 0, missing: [], addressSummary: "" };
     }
     const source = buildSource(payload);
     const mode = normalizeJobDefaultMode(defaultMode);
-    const textFields = FILL_TEXT_FIELDS;
+    const textFields = skipAddress
+      ? FILL_TEXT_FIELDS.filter(function notAddress(key) {
+          return ADDRESS_TEXT_FIELD_KEYS.indexOf(key) === -1;
+        })
+      : FILL_TEXT_FIELDS;
+    const selectFields = skipAddress
+      ? FILL_SELECT_FIELDS.filter(function notAddLocation(key) {
+          return key !== "addLocation";
+        })
+      : FILL_SELECT_FIELDS;
     const selectFieldValues = {
       propertyType: source.propertyType,
       payType: source.payType,
@@ -800,15 +1222,17 @@
       insuranceCarrier: source.insuranceCarrier,
       lossType: mapLossTypeForTeamAllen ? mapLossTypeForTeamAllen(source.lossType) : source.lossType,
       coordinator: mapCoordinatorForTeamAllen ? mapCoordinatorForTeamAllen(source.coordinator) : source.coordinator,
-      addLocation: source.addLocation
+      addLocation: source.addLocation,
+      jobStatus: source.jobStatus
     };
 
     applyJobDefaultModeToSelects(selectFieldValues, mode);
 
     const selectOptionValues = {
-      coordinator: selectFieldValues.coordinatorValue,
+      coordinator: source.coordinatorValue || selectFieldValues.coordinatorValue,
       reconManager: selectFieldValues.reconManagerValue,
-      lossType: selectFieldValues.lossTypeValue || payload.lossTypeValue
+      lossType: selectFieldValues.lossTypeValue || payload.lossTypeValue,
+      jobStatus: source.jobStatus
     };
 
     let filled = 0;
@@ -836,7 +1260,7 @@
       }
     });
 
-    FILL_SELECT_FIELDS.forEach(function eachSelect(key) {
+    selectFields.forEach(function eachSelect(key) {
       try {
         const elementId = map[key];
         if (!elementId) {
@@ -847,7 +1271,9 @@
           return;
         }
         const select = resolveElementByMapValue(elementId);
-        const ok = setSelectField(select, value, selectOptionValues[key]);
+        const optionValue =
+          key === "addLocation" ? source.addLocationValue : selectOptionValues[key];
+        const ok = setSelectField(select, value, optionValue);
         if (ok) {
           filled += 1;
         } else {
@@ -858,9 +1284,8 @@
       }
     });
 
-    if (source.billAddress && map.billAddress) {
-      const billCheckbox = resolveElementByMapValue(map.billAddress);
-      if (setCheckboxValue(billCheckbox, true)) {
+    if (!skipAddress && source.billAddress && map.billAddress) {
+      if (setBillAddressInRow(true)) {
         filled += 1;
       } else {
         missing.push("billAddress");
@@ -890,8 +1315,8 @@
     );
   }
 
-  function prepareAddressGridForEditFill(payload, done) {
-    if (!isOnEditJobPage() || !payloadTouchesAddressGrid(payload)) {
+  function prepareAddressGridForFill(payload, done) {
+    if (!needsAddressGridPrep(payload)) {
       done();
       return;
     }
@@ -901,15 +1326,19 @@
       return;
     }
     const rid = visibleRow.getAttribute("data-record-id") || "";
+    if (rid === "add") {
+      const addLink = visibleRow.querySelector('a[id^="iEditLink"], a[id^="iAddLink"]');
+      if (addLink && typeof addLink.click === "function") {
+        addLink.click();
+        global.setTimeout(done, 280);
+        return;
+      }
+    }
     if (!/^\d+$/.test(rid)) {
       done();
       return;
     }
-    if (
-      visibleRow.querySelector(
-        'input[id^="value_Address1_"], input[id^="value_City_"], input[id^="value_State_"], input[id^="value_Zip_"], select[id^="value_AddLocation_"]'
-      )
-    ) {
+    if (visibleAddressRowHasInlineInputs(visibleRow)) {
       done();
       return;
     }
@@ -919,7 +1348,7 @@
       return;
     }
     editLink.click();
-    global.setTimeout(done, 220);
+    global.setTimeout(done, 280);
   }
 
   function loadPayloads(callback) {
@@ -1319,6 +1748,16 @@
       copyJobRow.style.display = "none";
     }
 
+    const pasteNotesButton = document.createElement("button");
+    pasteNotesButton.type = "button";
+    pasteNotesButton.textContent = "Add notes from FNOL";
+    pasteNotesButton.title = "Add FNOL notes to the TeamAllen Notes grid (Misc)";
+    pasteNotesButton.style.cssText =
+      "flex:1;min-width:100px;border:1px solid #c7d2da;background:#fff;color:#334e68;border-radius:6px;padding:6px 8px;cursor:pointer;font:inherit;";
+    const pasteNotesRow = document.createElement("div");
+    pasteNotesRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;width:100%;";
+    pasteNotesRow.style.display = "none";
+
     const historyLabel = document.createElement("div");
     historyLabel.textContent = "Choose scraped record:";
     historyLabel.style.marginTop = "8px";
@@ -1361,6 +1800,24 @@
       });
 
       historySelect.value = selectedHistoryIndex >= 0 ? String(selectedHistoryIndex) : "-1";
+      refreshAddNotesFromFnolVisibility(latest, history);
+    }
+
+    function refreshAddNotesFromFnolVisibility(latest, history) {
+      if (!settingsApi || !pasteNotesRow) {
+        return;
+      }
+      settingsApi.getPendingNotesPaste(function onPending(pending) {
+        let payload = latest || null;
+        if (selectedHistoryIndex >= 0 && history && history[selectedHistoryIndex]) {
+          payload = history[selectedHistoryIndex];
+        } else if (!payload && history && history.length) {
+          payload = history[0];
+        }
+        const hasPending = pending && normalizeText(pending.text);
+        const hasPayloadNotes = noteTextFromPayload(payload);
+        pasteNotesRow.style.display = hasPending || hasPayloadNotes ? "flex" : "none";
+      });
     }
 
     function loadPayloadForEditor(latest, history) {
@@ -1451,6 +1908,47 @@
       }
     });
 
+    pasteNotesButton.addEventListener("click", function onPasteNotes() {
+      function runPaste(payload) {
+        if (!payload || !noteTextFromPayload(payload)) {
+          setStatus("No FNOL notes in payload — submit from FNOL or load a payload with notes.");
+          return;
+        }
+        setStatus("Adding notes from FNOL…");
+        pasteNotesFromPayload(payload, function onDone(ok, msg) {
+          if (ok && settingsApi) {
+            settingsApi.clearPendingNotesPaste();
+          }
+          setStatus(msg);
+        });
+      }
+
+      if (!settingsApi) {
+        setStatus("Settings unavailable.");
+        return;
+      }
+      settingsApi.getPendingNotesPaste(function onPending(pending) {
+        if (pending && normalizeText(pending.text)) {
+          runPaste({ notes: pending.text });
+          return;
+        }
+        loadPayloads(function onLoaded(latest, history) {
+          let payload = null;
+          const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+          if (editorParsed.ok && normalizeText(jsonEditor && jsonEditor.getText())) {
+            payload = editorParsed.payload;
+          } else if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
+            payload = history[selectedHistoryIndex];
+          } else if (latest) {
+            payload = latest;
+          } else if (history.length) {
+            payload = history[0];
+          }
+          runPaste(payload);
+        });
+      });
+    });
+
     fillButton.addEventListener("click", function onFill() {
       loadPayloads(function onLoaded(latest, history, storedJobDefaultMode) {
         populateHistory(history, latest);
@@ -1497,10 +1995,9 @@
           return;
         }
 
-        prepareAddressGridForEditFill(payload, function afterAddressPrepare() {
-          const fillResult = fillFromPayload(payload, defaultMode);
+        runFillWithAddressPrep(payload, defaultMode, function afterFill(fillResult) {
           const staleMessage = getStalenessMessage(payload);
-          const missingText = fillResult.missing.length ? " Missing: " + fillResult.missing.join(", ") + "." : "";
+          const missingText = formatFillMissingMessage(fillResult.missing);
           const addressText = fillResult.addressSummary ? " Address: " + fillResult.addressSummary + "." : "";
           setStatus(
             "Filled " + fillResult.filled + " fields." +
@@ -1525,6 +2022,8 @@
     copyJobRow.appendChild(copyJobButton);
     copyJobRow.appendChild(copyPlainJobButton);
     panel.appendChild(copyJobRow);
+    pasteNotesRow.appendChild(pasteNotesButton);
+    panel.appendChild(pasteNotesRow);
     panel.appendChild(historyLabel);
     panel.appendChild(historySelect);
     panel.appendChild(status);
@@ -1561,6 +2060,8 @@
       }
       if (!editJobMode) {
         tryPendingAutoFill(setStatus);
+      } else {
+        tryPendingNotesPasteOnEditBoot(setStatus);
       }
     });
   }
@@ -1575,6 +2076,8 @@
     } else if (isOnEditJobPage()) {
       if (!cachedSettings.hideAddEditHelperPanel) {
         createPanel(true);
+      } else {
+        tryPendingNotesPasteOnEditBoot(null);
       }
     } else if (isOnListPage()) {
       createListPagePanel();

@@ -283,6 +283,7 @@
     mapLossTypeForTeamAllen: fieldsApi.mapLossTypeForTeamAllen,
     mapCoordinatorForTeamAllen: fieldsApi.mapCoordinatorForTeamAllen,
     mapAddLocationForTeamAllen: fieldsApi.mapAddLocationForTeamAllen,
+    mapAddLocationValueForTeamAllen: fieldsApi.mapAddLocationValueForTeamAllen,
     isPlausibleBusinessName: fieldsApi.isPlausibleBusinessName,
     isPlausibleClaimNumber: fieldsApi.isPlausibleClaimNumber,
     isFullAddressLine: fieldsApi.isFullAddressLine,

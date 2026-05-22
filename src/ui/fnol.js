@@ -27,12 +27,16 @@
   const fnolUnlockBtn = document.getElementById("fnolUnlockBtn");
   const fnolUnlockStatus = document.getElementById("fnolUnlockStatus");
   const fnolForm = document.getElementById("fnolForm");
+  const fnolCustomer = document.getElementById("fnolCustomer");
   const fnolClearBtn = document.getElementById("fnolClearBtn");
   const fnolCopyPlainBtn = document.getElementById("fnolCopyPlainBtn");
   const fnolLossType = document.getElementById("fnolLossType");
   const fnolJobList = document.getElementById("fnolJobList");
   const fnolJobEmpty = document.getElementById("fnolJobEmpty");
   const fnolStatus = document.getElementById("fnolStatus");
+  const fnolNotesInput = document.getElementById("fnolNotes");
+  const fnolNotesCounter = document.getElementById("fnolNotesCounter");
+  const NOTES_MAX_LENGTH = fnolNotesApi ? fnolNotesApi.NOTES_MAX_LENGTH : 500;
 
   let fnolRegistryCache = [];
   let activeJobIndex = -1;
@@ -77,16 +81,32 @@
     fnolUnlockStatus.className = "status" + (kind ? " " + kind : "");
   }
 
-  function setActivated(activated) {
+  function focusFirstField() {
+    if (fnolCustomer && typeof fnolCustomer.focus === "function") {
+      try {
+        fnolCustomer.focus();
+      } catch (e) {
+        /* ignore focus errors */
+      }
+    }
+  }
+
+  function setActivated(activated, options) {
+    const wasLocked = fnolFormPanel && fnolFormPanel.classList.contains("is-locked");
     if (fnolFormPanel) {
       fnolFormPanel.classList.toggle("is-locked", !activated);
     }
     if (fnolLockedOverlay) {
       fnolLockedOverlay.classList.toggle("is-active", !activated);
     }
-    if (activated && fnolAccessCode) {
-      fnolAccessCode.value = "";
+    if (activated) {
+      if (fnolAccessCode) {
+        fnolAccessCode.value = "";
+      }
       setUnlockStatus("");
+      if ((options && options.focus) || wasLocked) {
+        focusFirstField();
+      }
     }
   }
 
@@ -115,7 +135,7 @@
         if (fnolAccessCode) {
           fnolAccessCode.value = "";
         }
-        setActivated(true);
+        setActivated(true, { focus: true });
         setStatus("");
         return;
       }
@@ -196,6 +216,7 @@
       "payType",
       "businessUnit",
       "coordinator",
+      "jobStatus",
       "address1",
       "address2",
       "city",
@@ -209,15 +230,32 @@
     ];
     fields.forEach(function eachName(name) {
       const el = fnolForm.elements.namedItem(name);
-      if (el && payload[name] !== undefined && payload[name] !== null) {
-        el.value = payload[name];
+      if (!el || payload[name] === undefined || payload[name] === null) {
+        return;
+      }
+      el.value = payload[name];
+      if (el.tagName === "SELECT" && el.value !== String(payload[name])) {
+        const target = String(payload[name]).toLowerCase().trim();
+        const matching = Array.from(el.options).find(function findOpt(opt) {
+          return opt.textContent.toLowerCase().trim() === target;
+        });
+        if (matching) {
+          el.value = matching.value;
+        }
       }
     });
+    if (payload.coordinatorValue) {
+      const coordEl = fnolForm.elements.namedItem("coordinator");
+      if (coordEl && coordEl.tagName === "SELECT") {
+        coordEl.value = payload.coordinatorValue;
+      }
+    }
     setSelectByLabelOrValue(fnolLossType, payload.lossType, payload.lossTypeValue);
     const notesEl = fnolForm.elements.namedItem("notesUser");
     if (notesEl) {
       notesEl.value = payload.notesUser || "";
     }
+    updateFnolNotesCounter();
   }
 
   function readFnolFormAdjuster() {
@@ -259,7 +297,15 @@
       state: String(data.get("state") || "").trim(),
       zip: String(data.get("zip") || "").trim(),
       insuranceCarrier: String(data.get("insuranceCarrier") || "").trim(),
+      jobStatus: String(data.get("jobStatus") || "").trim(),
       coordinator: String(data.get("coordinator") || "").trim(),
+      coordinatorValue: (function resolveCoordinatorValue() {
+        const el = fnolForm && fnolForm.elements.namedItem("coordinator");
+        if (el && el.tagName === "SELECT") {
+          return String(el.value || "").trim();
+        }
+        return "";
+      })(),
       adjusterName: adjuster.adjusterName,
       adjusterPhone: adjuster.adjusterPhone,
       adjusterEmail: adjuster.adjusterEmail,
@@ -272,8 +318,9 @@
       scrapedAt: new Date().toISOString()
     };
     if (payload.propertyType) {
-      payload.addLocation =
-        payload.propertyType.indexOf("Commercial") !== -1 ? "Commercial" : "Residence";
+      const isCommercial = payload.propertyType.indexOf("Commercial") !== -1;
+      payload.addLocation = isCommercial ? "Commercial" : "Residence";
+      payload.addLocationValue = isCommercial ? "2" : "1";
     }
     return payload;
   }
@@ -533,6 +580,31 @@
     });
   }
 
+  function updateFnolNotesCounter() {
+    if (!fnolNotesCounter) {
+      return;
+    }
+    const userLen = fnolNotesInput ? String(fnolNotesInput.value || "").length : 0;
+    const previewPayload = buildFnolPayload({ previewNotes: true });
+    const mergedLen = String((previewPayload && previewPayload.notes) || "").length;
+    const over = mergedLen > NOTES_MAX_LENGTH;
+    fnolNotesCounter.textContent =
+      mergedLen + " / " + NOTES_MAX_LENGTH + (userLen !== mergedLen ? " (with adjuster backup)" : "");
+    fnolNotesCounter.classList.toggle("is-over", over);
+  }
+
+  if (fnolNotesInput) {
+    fnolNotesInput.addEventListener("input", updateFnolNotesCounter);
+    const adjusterIds = ["fnolAdjusterName", "fnolAdjusterPhone", "fnolAdjusterEmail"];
+    adjusterIds.forEach(function eachAdjusterId(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input", updateFnolNotesCounter);
+      }
+    });
+    updateFnolNotesCounter();
+  }
+
   populateFnolLossTypes();
   loadFnolRegistry();
   refreshActivationState();
@@ -541,6 +613,7 @@
     fnolForm.reset();
     setActiveJobIndex(-1);
     setStatus("");
+    updateFnolNotesCounter();
   });
 
   if (fnolCopyPlainBtn) {
@@ -568,6 +641,15 @@
         setStatus("Customer name is required.", "error");
         return;
       }
+      const notesLen = String(payload.notes || "").length;
+      if (notesLen > NOTES_MAX_LENGTH) {
+        setStatus(
+          "Notes are " + notesLen + " characters (max " + NOTES_MAX_LENGTH + "). Shorten notes before submitting.",
+          "error"
+        );
+        updateFnolNotesCounter();
+        return;
+      }
 
       const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
       setStatus(
@@ -576,14 +658,17 @@
           : "Saving and opening add job page…"
       );
 
-      upsertPayloadHistory(payload, function onSaved(ok) {
-        if (!ok) {
-          setStatus("Failed to save payload.", "error");
+      const noteText = String(payload.notes || "").trim();
+
+      function queuePendingNotesPaste(done) {
+        if (settings.fnolPasteNotesAfterSave !== false && noteText) {
+          settingsApi.setPendingNotesPaste(noteText, done);
           return;
         }
-        upsertFnolRegistry(payload, function onRegistrySaved() {
-          /* list refreshed in upsert */
-        });
+        settingsApi.clearPendingNotesPaste(done);
+      }
+
+      function openTeamAllenTab() {
         const shouldAutoSave = settings.fnolAutoSave !== false;
         const targetUrl = teamAllenTargetUrl(openVia);
         if (openVia === "modal" || shouldAutoSave) {
@@ -591,12 +676,16 @@
             { autoSave: shouldAutoSave, openVia: openVia },
             function onPending() {
               chrome.tabs.create({ url: targetUrl }, function onTab() {
+                const notesHint =
+                  noteText && settings.fnolPasteNotesAfterSave !== false
+                    ? " Notes will be added after save when the Notes section is ready."
+                    : "";
                 setStatus(
-                  openVia === "modal"
+                  (openVia === "modal"
                     ? shouldAutoSave
                       ? "Saved. Jobs list opened — popup will fill and save."
                       : "Saved. Jobs list opened — popup will fill."
-                    : "Saved. Add job page opened — will fill and save.",
+                    : "Saved. Add job page opened — will fill and save.") + notesHint,
                   "ok"
                 );
               });
@@ -608,6 +697,19 @@
             setStatus("Saved. Add job page opened — fill manually on that tab.", "ok");
           });
         }
+      }
+
+      upsertPayloadHistory(payload, function onSaved(ok) {
+        if (!ok) {
+          setStatus("Failed to save payload.", "error");
+          return;
+        }
+        upsertFnolRegistry(payload, function onRegistrySaved() {
+          /* list refreshed in upsert */
+        });
+        queuePendingNotesPaste(function onNotesQueued() {
+          openTeamAllenTab();
+        });
       });
     });
   });
