@@ -26,7 +26,7 @@ body {
   background: var(--sp-surface);
   border: 1px solid var(--sp-border);
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--sp-panel-shadow);
 }
 
 .fnol-header-main {
@@ -52,11 +52,12 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
+  color: var(--sp-text);
 }
 
 .fnol-header .sub {
   margin: 2px 0 0;
-  color: #64748b;
+  color: var(--sp-text-muted);
   font-size: 12px;
   line-height: 1.35;
   white-space: nowrap;
@@ -67,10 +68,10 @@ body {
 .fnol-nav a {
   display: inline-block;
   padding: 6px 12px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #334e68;
-  border-radius: 6px;
+  border: 1px solid var(--sp-border);
+  background: var(--sp-surface-muted);
+  color: var(--sp-text);
+  border-radius: var(--sp-radius);
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
@@ -78,8 +79,8 @@ body {
 }
 
 .fnol-nav a:hover {
-  border-color: #94a3b8;
-  background: #f8fafc;
+  border-color: var(--sp-focus-border);
+  background: var(--sp-row-hover);
 }
 
 /* —— Main layout: sidebar + form —— */
@@ -105,7 +106,7 @@ body {
   border: 1px solid var(--sp-border);
   border-radius: 10px;
   padding: 10px 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--sp-panel-shadow);
 }
 
 .fnol-panel h2 {
@@ -139,12 +140,12 @@ body {
 .fnol-job-empty {
   padding: 12px 8px;
   text-align: center;
-  color: #64748b;
+  color: var(--sp-text-muted);
   font-size: 12px;
   line-height: 1.4;
-  border: 1px dashed #cbd5e1;
-  border-radius: 6px;
-  background: #f8fafc;
+  border: 1px dashed var(--sp-border);
+  border-radius: var(--sp-radius);
+  background: var(--sp-surface-muted);
 }
 
 .fnol-job-item {
@@ -154,20 +155,21 @@ body {
   gap: 8px;
   padding: 8px;
   margin-bottom: 6px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border: 1px solid var(--sp-row-border);
+  border-radius: var(--sp-radius);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
+  background: var(--sp-surface);
 }
 
 .fnol-job-item:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: var(--sp-row-hover);
+  border-color: var(--sp-border);
 }
 
 .fnol-job-item.is-active {
-  background: #eff6ff;
-  border-color: #93c5fd;
+  background: var(--sp-row-active-bg);
+  border-color: var(--sp-row-active-border);
 }
 
 .fnol-job-body {
@@ -178,28 +180,28 @@ body {
 .fnol-job-name {
   font-weight: 600;
   font-size: 13px;
-  color: #0f172a;
+  color: var(--sp-text);
   margin: 0 0 2px;
   word-break: break-word;
 }
 
 .fnol-job-time {
   font-size: 11px;
-  color: #475569;
+  color: var(--sp-text-muted);
   margin: 0 0 2px;
 }
 
 .fnol-job-meta {
   font-size: 11px;
-  color: #64748b;
+  color: var(--sp-text-muted);
   margin: 0;
 }
 
 .fnol-job-delete {
   flex-shrink: 0;
-  border: 1px solid #fecaca;
-  background: #fff;
-  color: #b42318;
+  border: 1px solid var(--sp-danger-border);
+  background: var(--sp-danger-surface);
+  color: var(--sp-danger);
   border-radius: 4px;
   padding: 3px 6px;
   font-size: 11px;
@@ -208,7 +210,7 @@ body {
 }
 
 .fnol-job-delete:hover {
-  background: #fef2f2;
+  background: var(--sp-danger-surface-hover);
 }
 
 /* —— Form panel —— */
@@ -284,18 +286,18 @@ body {
 }
 
 .fnol-section {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--sp-border-subtle);
+  border-radius: var(--sp-radius-lg);
   padding: 8px 10px 6px;
   margin: 0;
-  background: #fafbfc;
+  background: var(--sp-section-bg);
   min-width: 0;
 }
 
 .fnol-section legend {
   font-size: 11px;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--sp-section-legend);
   padding: 0 6px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -310,7 +312,7 @@ body {
   display: block;
   font-size: 11px;
   font-weight: 500;
-  color: #475569;
+  color: var(--sp-text-muted);
   margin-bottom: 3px;
 }
 
@@ -319,19 +321,26 @@ body {
 .field textarea {
   width: 100%;
   padding: 6px 8px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--sp-input-border);
+  border-radius: var(--sp-radius);
   font: inherit;
   font-size: 13px;
-  background: #fff;
+  background: var(--sp-input-bg);
+  color: var(--sp-text);
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--sp-text-muted);
+  opacity: 0.75;
 }
 
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: var(--sp-focus-border);
+  box-shadow: 0 0 0 2px var(--sp-focus-ring);
 }
 
 .field textarea {
@@ -345,13 +354,13 @@ body {
 
 .fnol-notes-counter {
   font-size: 11px;
-  color: #64748b;
+  color: var(--sp-text-muted);
   margin: 4px 0 0;
   text-align: right;
 }
 
 .fnol-notes-counter.is-over {
-  color: #b91c1c;
+  color: var(--sp-danger);
   font-weight: 600;
 }
 
@@ -399,7 +408,7 @@ body {
 
 .hint {
   font-size: 11px;
-  color: #64748b;
+  color: var(--sp-text-muted);
   margin: 4px 0 0;
   line-height: 1.3;
 }
@@ -411,8 +420,8 @@ body {
   z-index: 5;
   margin: 10px -12px 0;
   padding: 8px 12px 10px;
-  background: linear-gradient(to top, #fff 85%, rgba(255, 255, 255, 0.97));
-  border-top: 1px solid #e2e8f0;
+  background: var(--sp-action-bar-bg);
+  border-top: 1px solid var(--sp-border-subtle);
   border-radius: 0 0 10px 10px;
 }
 
@@ -453,14 +462,14 @@ body {
 }
 
 .btn.secondary {
-  background: var(--sp-surface);
+  background: var(--sp-surface-muted);
   color: var(--sp-text);
   border-color: var(--sp-border);
   font-weight: 500;
 }
 
 .btn.secondary:hover {
-  background: var(--sp-surface-muted);
+  background: var(--sp-row-hover);
 }
 
 .status {
@@ -484,7 +493,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--sp-bg) 96%, transparent);
+  background: color-mix(in srgb, var(--sp-bg) 92%, transparent);
   border-radius: 10px;
   padding: 16px;
 }
@@ -501,17 +510,18 @@ body {
   border: 1px solid var(--sp-border);
   border-radius: 10px;
   padding: 16px 18px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--sp-overlay-shadow);
 }
 
 .fnol-unlock-card h2 {
   margin: 0 0 6px;
   font-size: 16px;
+  color: var(--sp-text);
 }
 
 .fnol-unlock-hint {
   margin: 0 0 12px;
-  color: #64748b;
+  color: var(--sp-text-muted);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -519,16 +529,24 @@ body {
 .fnol-unlock-card .field label {
   display: block;
   font-size: 11px;
-  color: #475569;
+  color: var(--sp-text-muted);
   margin-bottom: 3px;
 }
 
 .fnol-unlock-card .field input {
   width: 100%;
   padding: 6px 8px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border: 1px solid var(--sp-input-border);
+  border-radius: var(--sp-radius);
   font-size: 13px;
+  background: var(--sp-input-bg);
+  color: var(--sp-text);
+}
+
+.fnol-unlock-card .field input:focus {
+  outline: none;
+  border-color: var(--sp-focus-border);
+  box-shadow: 0 0 0 2px var(--sp-focus-ring);
 }
 
 .fnol-unlock-card .actions {
@@ -546,4 +564,14 @@ body {
 .fnol-form-panel.is-locked .fnol-action-bar {
   pointer-events: none;
   opacity: 0.5;
+}
+
+/* WebKit autofill: avoid bright yellow boxes in dark mode */
+[data-theme="dark"] .field input:-webkit-autofill,
+[data-theme="dark"] .field select:-webkit-autofill,
+[data-theme="dark"] .field textarea:-webkit-autofill,
+[data-theme="dark"] .fnol-unlock-card .field input:-webkit-autofill {
+  -webkit-text-fill-color: var(--sp-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--sp-input-bg) inset;
+  transition: background-color 99999s ease-out;
 }

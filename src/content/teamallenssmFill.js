@@ -1579,6 +1579,14 @@
     body.appendChild(jsonEditor.element);
     document.body.appendChild(panel);
 
+    if (shell && shell.mountCollapsibleBody) {
+      shell.mountCollapsibleBody({
+        collapsedLabel: "Show payload editor",
+        expandedLabel: "Hide payload editor",
+        startExpanded: true
+      });
+    }
+
     const collapseControl = shell ? shell.mountCollapse("Job import") : { collapse: function noop() {} };
     if (cachedSettings.autoCollapsePanels !== false) {
       collapseControl.collapse();
@@ -1621,7 +1629,7 @@
       if (!addJobBtn) {
         return;
       }
-      if (panel.style.display !== "none") {
+      if (!collapseControl.isCollapsed || !collapseControl.isCollapsed()) {
         collapseControl.collapse();
       }
     }, true);
@@ -1704,12 +1712,6 @@
     if (helperPanelApi) {
       helperPanelApi.styleButton(copyPlainJobButton);
     }
-    const copyJobRow = document.createElement("div");
-    copyJobRow.className = "servpro-helper-row";
-    if (!editJobMode || cachedSettings.showEditCopyButton === false) {
-      copyJobRow.style.display = "none";
-    }
-
     const pasteNotesButton = document.createElement("button");
     pasteNotesButton.type = "button";
     pasteNotesButton.textContent = "Add notes from FNOL";
@@ -1861,7 +1863,12 @@
       });
     }
 
+    let bodyDropdown = null;
+
     pasteJsonButton.addEventListener("click", function onPasteJson() {
+      if (bodyDropdown) {
+        bodyDropdown.expand();
+      }
       if (jsonEditor && jsonEditor.pasteFromClipboard) {
         jsonEditor.pasteFromClipboard();
       }
@@ -1971,12 +1978,13 @@
     });
 
     actionRow.appendChild(fillButton);
+    if (editJobMode && cachedSettings.showEditCopyButton !== false) {
+      actionRow.appendChild(copyPlainJobButton);
+      actionRow.appendChild(copyJobButton);
+    }
     actionRow.appendChild(pasteJsonButton);
 
     const body = shell ? shell.body : panel;
-    copyJobRow.appendChild(copyJobButton);
-    copyJobRow.appendChild(copyPlainJobButton);
-    body.appendChild(copyJobRow);
     pasteNotesRow.appendChild(pasteNotesButton);
     body.appendChild(pasteNotesRow);
     body.appendChild(historyLabel);
@@ -1986,6 +1994,14 @@
       body.appendChild(jsonEditor.element);
     }
     document.body.appendChild(panel);
+
+    if (shell && shell.mountCollapsibleBody) {
+      bodyDropdown = shell.mountCollapsibleBody({
+        collapsedLabel: "Show payload & options",
+        expandedLabel: "Hide payload & options",
+        startExpanded: false
+      });
+    }
 
     const collapseControl = shell ? shell.mountCollapse("Job import") : { collapse: function noop() {} };
     if (cachedSettings.autoCollapsePanels !== false) {

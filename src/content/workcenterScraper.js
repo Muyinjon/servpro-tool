@@ -746,12 +746,21 @@
     toolbar.appendChild(exportButton);
     toolbar.appendChild(autofillButton);
 
+    const wcBody = shell ? shell.body : panel;
     if (jsonEditor) {
-      (shell ? shell.body : panel).appendChild(jsonEditor.element);
+      wcBody.appendChild(jsonEditor.element);
     }
 
     document.body.appendChild(panel);
     panelShell = shell;
+
+    if (shell && shell.mountCollapsibleBody) {
+      shell.mountCollapsibleBody({
+        collapsedLabel: "Show payload editor",
+        expandedLabel: "Hide payload editor",
+        startExpanded: false
+      });
+    }
 
     if (settingsApi) {
       settingsApi.getSettings(function onSettings(settings) {

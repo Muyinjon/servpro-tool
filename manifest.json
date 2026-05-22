@@ -30,6 +30,12 @@
     "https://*.servpronet.io/*",
     "https://teamallenssm.com/*"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/ui/theme.css"],
+      "matches": ["https://*.servpronet.io/*", "https://teamallenssm.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [
