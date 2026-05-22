@@ -6,6 +6,7 @@
   const openFnol = document.getElementById("openFnol");
   const openAddJob = document.getElementById("openAddJob");
   const popupStatus = document.getElementById("popupStatus");
+  const popupDarkMode = document.getElementById("popupDarkMode");
   const wi =
     (selectorsApi && selectorsApi.WORKCENTER_IMPORT) || {
       teamallenssmAddUrl: "https://teamallenssm.com/jobs1_add.php?",
@@ -13,7 +14,7 @@
     };
 
   if (!settingsApi) {
-    activationLine.textContent = "Settings module unavailable.";
+    activationLine.textContent = "Settings unavailable.";
     return;
   }
 
@@ -31,12 +32,18 @@
     return chrome.runtime.getURL("fnol.html");
   }
 
+  if (popupDarkMode) {
+    popupDarkMode.addEventListener("change", function onDarkToggle() {
+      settingsApi.saveSettings({ darkMode: popupDarkMode.checked });
+    });
+  }
+
   if (openFnol) {
     openFnol.addEventListener("click", function onOpenFnol() {
       settingsApi.getSettings(function onLoaded(settings) {
         if (!settingsApi.isTeamAllenActivated(settings)) {
-          popupStatus.textContent = "Enter access code in Settings first.";
-          popupStatus.className = "status error";
+          popupStatus.textContent = "Enter team access code in Settings first.";
+          popupStatus.className = "popup-status error";
           return;
         }
         chrome.tabs.create({ url: fnolPageUrl() });
@@ -48,8 +55,8 @@
   openAddJob.addEventListener("click", function onOpenAddJob() {
     settingsApi.getSettings(function onLoaded(settings) {
       if (!settingsApi.isTeamAllenActivated(settings)) {
-        popupStatus.textContent = "Enter access code in Settings first.";
-        popupStatus.className = "status error";
+        popupStatus.textContent = "Enter team access code in Settings first.";
+        popupStatus.className = "popup-status error";
         return;
       }
       const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
@@ -67,24 +74,40 @@
     });
   });
 
-  settingsApi.getSettings(function onLoaded(settings) {
+  function applyPopupState(settings) {
+    if (popupDarkMode) {
+      popupDarkMode.checked = Boolean(settings.darkMode);
+    }
     if (settingsApi.isTeamAllenActivated(settings)) {
-      activationLine.textContent = "Access enabled";
-      activationLine.className = "sub ok";
+      activationLine.textContent = "Team tools unlocked";
+      activationLine.className = "popup-sub ok";
       if (openFnol) {
         openFnol.classList.remove("hidden");
       }
       openAddJob.classList.remove("hidden");
       const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
       openAddJob.textContent =
-        openVia === "modal" ? "Open jobs list (Add Job popup)" : "Open add job page";
+        openVia === "modal" ? "Open jobs list" : "Open new job page";
     } else {
-      activationLine.textContent = "Enter code in Settings";
-      activationLine.className = "sub";
+      activationLine.textContent = "Enter access code in Settings";
+      activationLine.className = "popup-sub";
       if (openFnol) {
         openFnol.classList.add("hidden");
       }
       openAddJob.classList.add("hidden");
     }
+  }
+
+  settingsApi.getSettings(function onLoaded(settings) {
+    applyPopupState(settings);
   });
+
+  if (chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener(function onChanged(changes, areaName) {
+      if (areaName !== "local" || !changes[settingsApi.SETTINGS_KEY]) {
+        return;
+      }
+      applyPopupState(settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue));
+    });
+  }
 })();

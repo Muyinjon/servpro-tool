@@ -7,6 +7,7 @@
   const ACTIVATION_CODE = "TeamAllenSSM";
 
   const DEFAULT_SETTINGS = {
+    darkMode: false,
     teamAllenActivated: false,
     hideListPanel: false,
     hideAddEditHelperPanel: false,

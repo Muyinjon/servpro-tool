@@ -1,99 +1,112 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>ServPro Helper — Settings</title>
-    <link rel="stylesheet" href="src/ui/options.css" />
-  </head>
-  <body>
-    <div class="wrap">
-      <header>
-        <img src="icon-48.png" alt="" />
-        <div>
-          <h1>ServPro Helper Settings</h1>
-          <p class="sub">Import helper and display preferences</p>
-        </div>
-      </header>
-
-      <section class="card">
-        <h2>First Notice of Loss</h2>
-        <p class="hint">Enter new jobs on a dedicated page with a clear form and job history list.</p>
-        <div class="actions">
-          <a id="openFnolLink" class="btn" href="#">Open First Notice of Loss</a>
-        </div>
-      </section>
-
-      <section id="settingsCard" class="card locked">
-        <h2>Display &amp; behavior</h2>
-        <div class="row">
-          <input type="checkbox" id="hideListPanel" />
-          <label for="hideListPanel">Hide list page paste panel </label>
-        </div>
-        <div class="row">
-          <input type="checkbox" id="hideAddEditHelperPanel" />
-          <label for="hideAddEditHelperPanel">Hide add/edit import helper panel</label>
-        </div>
-        <div class="row">
-          <input type="checkbox" id="autoCollapsePanels" />
-          <label for="autoCollapsePanels">Auto-collapse helper panels on load</label>
-        </div>
-        <div class="field">
-          <label for="defaultJobModeOnFill">Default coordinator mode on fill</label>
-          <select id="defaultJobModeOnFill" name="defaultJobModeOnFill">
-            <option value="none">Non-default</option>
-            <option value="recon">Default recon</option>
-            <option value="mitigation">Default mitigation</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="teamAllenAddJobUi">Add job opens as</label>
-          <select id="teamAllenAddJobUi" name="teamAllenAddJobUi">
-            <option value="modal">List popup (modal)</option>
-            <option value="page">Full page</option>
-          </select>
-          <p class="hint">Popup opens the jobs list and Add Job modal (recommended). Full page opens the add form in a new tab.</p>
-        </div>
-        <div class="row">
-          <input type="checkbox" id="fnolAutoSave" />
-          <label for="fnolAutoSave">Auto-save after FNOL submit (clicks Save on add form)</label>
-        </div>
-        <div class="row">
-          <input type="checkbox" id="fnolPasteNotesAfterSave" />
-          <label for="fnolPasteNotesAfterSave">After FNOL save, automatically add notes when Notes section is ready</label>
-        </div>
-        <div class="row">
-          <input type="checkbox" id="showEditCopyButton" />
-          <label for="showEditCopyButton">Show “Copy current job” on edit pages</label>
-        </div>
-        <div class="actions">
-          <button type="button" id="saveSettingsBtn" class="btn secondary">Save settings</button>
-        </div>
-        <div id="settingsStatus" class="status"></div>
-      </section>
-
-      <section id="activationCard" class="card activation">
-        <h2>Access code</h2>
-        <p class="hint">Enter your access code to unlock import tools, FNOL, and related settings.</p>
-        <div id="activationActiveBlock" style="display: none">
-          <div id="activationActive" class="status ok">Access enabled.</div>
-          <div class="actions">
-            <button type="button" id="resetActivationBtn" class="btn secondary">Reset access code</button>
-          </div>
-        </div>
-        <div id="activationForm">
-          <div class="field">
-            <label for="activationCode">Code</label>
-            <input id="activationCode" type="password" autocomplete="off" placeholder="Enter code" />
-          </div>
-          <div class="actions">
-            <button type="button" id="activateBtn" class="btn">Submit code</button>
-          </div>
-        </div>
-        <div id="activationStatus" class="status"></div>
-      </section>
-    </div>
-
-    <script src="src/lib/settings.js"></script>
-    <script src="src/ui/options.js"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ServPro Helper — Settings</title>
+    <link rel="stylesheet" href="src/ui/theme.css" />
+    <link rel="stylesheet" href="src/ui/options.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="sp-page-header">
+        <img src="icon-48.png" alt="" />
+        <div>
+          <h1>ServPro Helper</h1>
+          <p class="sp-sub">Preferences and team access</p>
+        </div>
+      </header>
+
+      <section id="generalCard" class="sp-card">
+        <h2>General</h2>
+        <div class="sp-row">
+          <input type="checkbox" id="darkMode" />
+          <label for="darkMode">Dark mode</label>
+        </div>
+        <p class="sp-hint">Available without a team access code.</p>
+      </section>
+
+      <section id="activationCard" class="sp-card activation">
+        <h2>Team access</h2>
+        <p class="sp-hint">Enter your team access code to unlock job import and First Notice of Loss.</p>
+        <div id="activationActiveBlock" class="sp-hidden">
+          <div id="activationActive" class="sp-status ok">Team tools unlocked.</div>
+          <div class="sp-actions">
+            <button type="button" id="resetActivationBtn" class="sp-btn secondary sm">Reset access code</button>
+          </div>
+        </div>
+        <div id="activationForm">
+          <div class="sp-field">
+            <label for="activationCode">Access code</label>
+            <input id="activationCode" type="password" autocomplete="off" placeholder="Enter code" />
+          </div>
+          <div class="sp-actions">
+            <button type="button" id="activateBtn" class="sp-btn sm">Submit code</button>
+          </div>
+        </div>
+        <div id="activationStatus" class="sp-status"></div>
+      </section>
+
+      <div id="teamToolsSection" class="sp-hidden" hidden>
+        <section class="sp-card">
+          <h2>First Notice of Loss</h2>
+          <p class="sp-hint">Dedicated form with job history — submit opens the job site for import.</p>
+          <div class="sp-actions">
+            <a id="openFnolLink" class="sp-btn sm" href="#">Open First Notice of Loss</a>
+          </div>
+        </section>
+
+        <section id="settingsCard" class="sp-card">
+          <h2>Import &amp; display</h2>
+          <div class="sp-row">
+            <input type="checkbox" id="hideListPanel" />
+            <label for="hideListPanel">Hide list page paste panel</label>
+          </div>
+          <div class="sp-row">
+            <input type="checkbox" id="hideAddEditHelperPanel" />
+            <label for="hideAddEditHelperPanel">Hide add/edit import helper panel</label>
+          </div>
+          <div class="sp-row">
+            <input type="checkbox" id="autoCollapsePanels" />
+            <label for="autoCollapsePanels">Auto-collapse helper panels on load</label>
+          </div>
+          <div class="sp-field">
+            <label for="defaultJobModeOnFill">Default coordinator mode on fill</label>
+            <select id="defaultJobModeOnFill" name="defaultJobModeOnFill">
+              <option value="none">Non-default</option>
+              <option value="recon">Default recon</option>
+              <option value="mitigation">Default mitigation</option>
+            </select>
+          </div>
+          <div class="sp-field">
+            <label for="teamAllenAddJobUi">New job opens as</label>
+            <select id="teamAllenAddJobUi" name="teamAllenAddJobUi">
+              <option value="modal">List popup (modal)</option>
+              <option value="page">Full page</option>
+            </select>
+            <p class="sp-hint">Popup opens the jobs list and Add Job modal (recommended).</p>
+          </div>
+          <div class="sp-row">
+            <input type="checkbox" id="fnolAutoSave" />
+            <label for="fnolAutoSave">Auto-save after FNOL submit</label>
+          </div>
+          <div class="sp-row">
+            <input type="checkbox" id="fnolPasteNotesAfterSave" />
+            <label for="fnolPasteNotesAfterSave">After FNOL save, auto-add notes when Notes section is ready</label>
+          </div>
+          <div class="sp-row">
+            <input type="checkbox" id="showEditCopyButton" />
+            <label for="showEditCopyButton">Show “Copy current job” on edit pages</label>
+          </div>
+          <div class="sp-actions">
+            <button type="button" id="saveSettingsBtn" class="sp-btn secondary sm">Save import settings</button>
+          </div>
+          <div id="settingsStatus" class="sp-status"></div>
+        </section>
+      </div>
+    </div>
+
+    <script src="src/lib/settings.js"></script>
+    <script src="src/ui/theme.js"></script>
+    <script src="src/ui/options.js"></script>
+  </body>
+</html>

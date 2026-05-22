@@ -468,7 +468,7 @@
   }
 
   function setStatus(message) {
-    const status = document.querySelector("#servpro-workcenter-helper-panel .servpro-workcenter-status");
+    const status = document.querySelector("#servpro-workcenter-helper-panel .servpro-helper-status");
     if (status) {
       status.textContent = message;
     }
@@ -568,61 +568,55 @@
       return;
     }
 
+    const helperPanelApi = root.helperPanel;
     const payloadPanelApi = root.importPayloadPanel;
     let latestPayload = null;
     let lastScrapedPayload = null;
     let jsonEditor = null;
+    let panelShell = null;
 
-    const panel = document.createElement("div");
-    panel.id = "servpro-workcenter-helper-panel";
-    panel.style.cssText = [
-      "position:fixed",
-      "right:16px",
-      "bottom:16px",
-      "z-index:2147483647",
-      "background:#fff",
-      "border:1px solid #c7d2da",
-      "border-radius:8px",
-      "padding:10px",
-      "box-shadow:0 2px 12px rgba(0,0,0,.2)",
-      "width:420px",
-      "max-height:90vh",
-      "overflow:auto",
-      "font:13px/1.4 Arial,sans-serif"
-    ].join(";");
+    if (helperPanelApi) {
+      helperPanelApi.ensureHelperTheme(document);
+    }
 
-    const title = document.createElement("div");
-    title.textContent = "WorkCenter Import Helper";
-    title.style.fontWeight = "700";
-    title.style.marginBottom = "8px";
+    const shell = helperPanelApi
+      ? helperPanelApi.createHelperShell({
+          id: "servpro-workcenter-helper-panel",
+          title: "WorkCenter capture",
+          variant: "workcenter"
+        })
+      : null;
 
-    const buttonBar = document.createElement("div");
-    buttonBar.style.display = "flex";
-    buttonBar.style.flexWrap = "wrap";
-    buttonBar.style.gap = "6px";
+    const panel = shell ? shell.panel : document.createElement("div");
+    if (!shell) {
+      panel.id = "servpro-workcenter-helper-panel";
+    }
+
+    const setPanelStatus = shell
+      ? shell.setStatus
+      : function fallbackStatus(msg) {
+          setStatus(msg);
+        };
 
     const scrapeButton = document.createElement("button");
     scrapeButton.type = "button";
-    scrapeButton.textContent = "Scrape WorkCenter";
+    scrapeButton.textContent = "Scrape";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(scrapeButton, "primary");
+    }
 
     const exportButton = document.createElement("button");
     exportButton.type = "button";
     exportButton.textContent = "Export JSON";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(exportButton);
+    }
 
     const autofillButton = document.createElement("button");
     autofillButton.type = "button";
-    autofillButton.textContent = "Open import target";
+    autofillButton.textContent = "Open job import";
+    autofillButton.className = "servpro-btn";
     autofillButton.style.display = "none";
-
-    [scrapeButton, exportButton, autofillButton].forEach(function styleButton(btn) {
-      btn.style.cssText = "border:1px solid #1976d2;background:#1976d2;color:#fff;border-radius:6px;padding:6px 8px;cursor:pointer;";
-    });
-
-    const status = document.createElement("div");
-    status.className = "servpro-workcenter-status";
-    status.style.marginTop = "8px";
-    status.style.color = "#334e68";
-    status.textContent = "Ready";
 
     function updateEditor(payload, expand) {
       if (jsonEditor) {
@@ -636,7 +630,7 @@
       savePayload(latestPayload, function onSave(ok, historyCount) {
         const count = countFilledCoreFields(latestPayload);
         updateEditor(latestPayload, true);
-        setStatus(
+        setPanelStatus(
           ok
             ? "Scraped and saved (" + count + "/9 key fields). History: " + historyCount + "/5." + getBusinessUnitWarning(latestPayload)
             : "Scraped, but failed to save to storage"
@@ -652,7 +646,7 @@
         getBaselinePayload: function getBaseline() {
           return lastScrapedPayload || latestPayload;
         },
-        onStatus: setStatus,
+        onStatus: setPanelStatus,
         onSave: function onSavePayload(payload, done) {
           latestPayload = payload;
           savePayload(payload, function onSaved(ok, historyCount) {
@@ -674,7 +668,7 @@
         }
         savePayload(latestPayload, function onSave() {
           exportPayloadFromText(root.importPayloadPanel.formatPayload(latestPayload));
-          setStatus("Exported JSON file.");
+          setPanelStatus("Exported JSON file.");
         });
         return;
       }
@@ -683,11 +677,11 @@
         savePayload(parsed.payload, function onSave() {
           latestPayload = parsed.payload;
           exportPayloadFromText(text);
-          setStatus("Exported JSON file.");
+          setPanelStatus("Exported JSON file.");
         });
       } else {
         exportPayloadFromText(text);
-        setStatus("Exported JSON file (not saved — invalid JSON).");
+        setPanelStatus("Exported JSON file (not saved — invalid JSON).");
       }
     });
 
@@ -702,13 +696,13 @@
 
         function afterSave(ok, historyCount) {
           if (!ok) {
-            setStatus("Failed to save payload.");
+            setPanelStatus("Failed to save payload.");
             return;
           }
           if (openVia === "modal" && settingsApi) {
             settingsApi.setPendingAutoSubmit({ autoSave: false, openVia: "modal" }, function onPending() {
               global.open(targetUrl, "_blank");
-              setStatus(
+              setPanelStatus(
                 "Opened jobs list. Add Job popup will fill automatically. History: " +
                   historyCount +
                   "/5."
@@ -717,7 +711,7 @@
             return;
           }
           global.open(targetUrl, "_blank");
-          setStatus("Opened import target. History: " + historyCount + "/5.");
+          setPanelStatus("Opened job import. History: " + historyCount + "/5.");
         }
 
         const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
@@ -735,7 +729,7 @@
       if (settingsApi) {
         settingsApi.getSettings(function onSettings(settings) {
           if (!settingsApi.isTeamAllenActivated(settings)) {
-            setStatus("Enter access code in Settings first.");
+            setPanelStatus("Enter team access code in Settings first.");
             return;
           }
           openTeamAllenTarget(settings);
@@ -745,8 +739,23 @@
       openTeamAllenTarget(null);
     });
 
+    const toolbar = shell ? shell.toolbar : panel;
+    toolbar.appendChild(scrapeButton);
+    toolbar.appendChild(exportButton);
+    toolbar.appendChild(autofillButton);
+
+    if (jsonEditor) {
+      (shell ? shell.body : panel).appendChild(jsonEditor.element);
+    }
+
+    document.body.appendChild(panel);
+    panelShell = shell;
+
     if (settingsApi) {
       settingsApi.getSettings(function onSettings(settings) {
+        if (panelShell && panelShell.syncTheme) {
+          panelShell.syncTheme(settings);
+        }
         if (settingsApi.isTeamAllenActivated(settings)) {
           autofillButton.style.display = "";
         }
@@ -755,16 +764,16 @@
       autofillButton.style.display = "";
     }
 
-    buttonBar.appendChild(scrapeButton);
-    buttonBar.appendChild(exportButton);
-    buttonBar.appendChild(autofillButton);
-    panel.appendChild(title);
-    panel.appendChild(buttonBar);
-    panel.appendChild(status);
-    if (jsonEditor) {
-      panel.appendChild(jsonEditor.element);
+    if (shell) {
+      const collapse = shell.mountCollapse("WC capture");
+      if (settingsApi) {
+        settingsApi.getSettings(function onSettings(s) {
+          if (s && s.autoCollapsePanels !== false) {
+            collapse.collapse();
+          }
+        });
+      }
     }
-    document.body.appendChild(panel);
 
     loadLatestPayload(function onLoad(payload) {
       if (payload) {
@@ -773,7 +782,7 @@
       }
       getHistoryCount(function onCount(historyCount) {
         if (historyCount > 0) {
-          setStatus("Ready. History: " + historyCount + "/5. Open JSON to review or edit.");
+          setPanelStatus("Ready. History: " + historyCount + "/5.");
         }
       });
     });

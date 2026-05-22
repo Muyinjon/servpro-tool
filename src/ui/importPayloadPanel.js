@@ -85,34 +85,28 @@
 
     const section = document.createElement("div");
     section.className = "servpro-import-json-section";
-    section.style.marginTop = "8px";
 
     const toggle = document.createElement("button");
     toggle.type = "button";
+    toggle.className = "servpro-json-toggle";
     toggle.textContent = "Show payload JSON";
-    toggle.style.cssText =
-      "border:1px solid #c7d2da;background:#f8fafc;color:#334e68;border-radius:6px;padding:4px 8px;cursor:pointer;width:100%;text-align:left;";
 
     const editorPanel = document.createElement("div");
     editorPanel.style.display = "none";
-    editorPanel.style.marginTop = "6px";
+    editorPanel.style.marginTop = "4px";
 
     const textarea = document.createElement("textarea");
     textarea.className = "servpro-import-json-editor";
     textarea.spellcheck = false;
-    textarea.style.cssText =
-      "width:100%;min-height:140px;max-height:220px;box-sizing:border-box;font:12px/1.4 Consolas,Monaco,monospace;padding:8px;border:1px solid #c7d2da;border-radius:6px;resize:vertical;";
 
     const errorEl = document.createElement("div");
     errorEl.className = "servpro-import-json-error";
-    errorEl.style.cssText = "color:#b42318;font-size:12px;margin-top:4px;display:none;";
 
     const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;";
+    actions.className = "servpro-import-json-actions";
 
     function styleSecondaryButton(btn) {
-      btn.style.cssText =
-        "border:1px solid #c7d2da;background:#fff;color:#334e68;border-radius:6px;padding:5px 8px;cursor:pointer;font:inherit;";
+      btn.className = "servpro-btn";
     }
 
     const saveBtn = document.createElement("button");
@@ -150,12 +144,11 @@
       if (!normalizeText(message)) {
         errorEl.style.display = "none";
         errorEl.textContent = "";
-        errorEl.style.color = "#b42318";
         return;
       }
       errorEl.style.display = "block";
       errorEl.textContent = message;
-      errorEl.style.color = isWarning ? "#b54708" : "#b42318";
+      errorEl.classList.toggle("is-warning", Boolean(isWarning));
     }
 
     function runPayloadChecks(payload) {

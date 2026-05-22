@@ -4,6 +4,8 @@
   const fieldsApi = root.workcenterFields || {};
   const settingsApi = root.settings;
   const fnolNotesApi = root.fnolNotes;
+  const helperPanelApi = root.helperPanel;
+  const themeApi = root.theme;
 
   if (!selectorsApi) {
     return;
@@ -74,6 +76,7 @@
     }
     settingsApi.getSettings(function onLoaded(settings) {
       cachedSettings = settings;
+      syncPanelThemes(cachedSettings);
       callback(settings);
     });
   }
@@ -1417,7 +1420,9 @@
         "padding:6px 4px",
         "font:12px/1.3 Arial,sans-serif",
         "cursor:pointer",
-        active ? "background:#1976d2;color:#fff;" : "background:#f8fafc;color:#334e68;"
+        active
+          ? "background:var(--sp-accent,#1b4332);color:#fff;"
+          : "background:var(--sp-surface-muted,#f8fafc);color:var(--sp-text,#334e68);"
       ].join("");
     }
 
@@ -1489,45 +1494,14 @@
     });
   }
 
-  function makeCollapsible(panel, restoreLabel, onCollapse) {
-    var restoreBtn = null;
-
-    function collapse() {
-      panel.style.display = "none";
-      if (restoreBtn && restoreBtn.parentElement) {
-        return;
+  function syncPanelThemes(settings) {
+    const merged = settings || cachedSettings;
+    ["servpro-teamallenssm-list-panel", "servpro-teamallenssm-helper-panel"].forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el && themeApi && themeApi.applyThemeToPanel) {
+        themeApi.applyThemeToPanel(el, merged);
       }
-      restoreBtn = document.createElement("button");
-      restoreBtn.type = "button";
-      restoreBtn.textContent = restoreLabel;
-      restoreBtn.style.cssText = [
-        "position:fixed",
-        "right:16px",
-        "bottom:16px",
-        "z-index:2147483647",
-        "background:#1976d2",
-        "color:#fff",
-        "border:none",
-        "border-radius:20px",
-        "padding:5px 12px",
-        "font:12px/1.4 Arial,sans-serif",
-        "cursor:pointer",
-        "box-shadow:0 2px 8px rgba(0,0,0,.25)"
-      ].join(";");
-      restoreBtn.addEventListener("click", function onRestore() {
-        panel.style.display = "block";
-        if (restoreBtn && restoreBtn.parentElement) {
-          restoreBtn.parentElement.removeChild(restoreBtn);
-        }
-        restoreBtn = null;
-      });
-      document.body.appendChild(restoreBtn);
-      if (typeof onCollapse === "function") {
-        onCollapse();
-      }
-    }
-
-    return { collapse: collapse };
+    });
   }
 
   function createListPagePanel() {
@@ -1543,50 +1517,32 @@
       return;
     }
 
-    const panel = document.createElement("div");
-    panel.id = "servpro-teamallenssm-list-panel";
-    panel.style.cssText = [
-      "position:fixed",
-      "right:16px",
-      "bottom:16px",
-      "z-index:2147483647",
-      "background:#fff",
-      "border:1px solid #c7d2da",
-      "border-radius:8px",
-      "padding:10px",
-      "box-shadow:0 2px 12px rgba(0,0,0,.2)",
-      "width:380px",
-      "max-height:80vh",
-      "overflow:auto",
-      "font:13px/1.4 Arial,sans-serif"
-    ].join(";");
+    if (helperPanelApi) {
+      helperPanelApi.ensureHelperTheme(document);
+    }
 
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;";
+    const shell = helperPanelApi
+      ? helperPanelApi.createHelperShell({
+          id: "servpro-teamallenssm-list-panel",
+          title: "Paste payload",
+          variant: "list",
+          settings: cachedSettings
+        })
+      : null;
 
-    const titleEl = document.createElement("span");
-    titleEl.textContent = "Add Job \u2014 Paste Payload";
-    titleEl.style.fontWeight = "700";
-
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.textContent = "\u00d7";
-    closeBtn.title = "Hide panel";
-    closeBtn.style.cssText = "background:none;border:none;font-size:18px;line-height:1;cursor:pointer;color:#627d98;padding:0 2px;";
-
-    header.appendChild(titleEl);
-    header.appendChild(closeBtn);
+    const panel = shell ? shell.panel : document.createElement("div");
+    if (!shell) {
+      panel.id = "servpro-teamallenssm-list-panel";
+    }
 
     const hint = document.createElement("div");
-    hint.textContent = "Paste WorkCenter JSON below, save it, then click \u201cAdd Job\u201d above.";
-    hint.style.cssText = "font-size:12px;color:#627d98;margin-bottom:8px;line-height:1.4;";
-
-    const status = document.createElement("div");
-    status.style.cssText = "margin-top:8px;color:#334e68;font-size:12px;";
-    status.textContent = "Ready";
+    hint.className = "sp-hint";
+    hint.textContent = "Paste WorkCenter JSON, save, then click Add Job above.";
 
     function setStatus(message) {
-      status.textContent = message;
+      if (shell) {
+        shell.setStatus(message);
+      }
     }
 
     let listPanelHasPayload = false;
@@ -1608,16 +1564,12 @@
 
     jsonEditor.expand();
 
-    panel.appendChild(header);
-    panel.appendChild(hint);
-    panel.appendChild(jsonEditor.element);
-    panel.appendChild(status);
+    const body = shell ? shell.body : panel;
+    body.appendChild(hint);
+    body.appendChild(jsonEditor.element);
     document.body.appendChild(panel);
 
-    const collapseControl = makeCollapsible(panel, "SP Helper \u25b2");
-    closeBtn.addEventListener("click", function onClose() {
-      collapseControl.collapse();
-    });
+    const collapseControl = shell ? shell.mountCollapse("Job import") : { collapse: function noop() {} };
     if (cachedSettings.autoCollapsePanels !== false) {
       collapseControl.collapse();
     }
@@ -1685,65 +1637,61 @@
     let jsonEditor = null;
     let latestStoredPayload = null;
 
-    const panel = document.createElement("div");
-    panel.id = "servpro-teamallenssm-helper-panel";
-    panel.style.cssText = [
-      "position:fixed",
-      "right:16px",
-      "bottom:16px",
-      "z-index:2147483647",
-      "background:#fff",
-      "border:1px solid #c7d2da",
-      "border-radius:8px",
-      "padding:10px",
-      "box-shadow:0 2px 12px rgba(0,0,0,.2)",
-      "width:420px",
-      "max-height:90vh",
-      "overflow:auto",
-      "font:13px/1.4 Arial,sans-serif"
-    ].join(";");
+    if (helperPanelApi) {
+      helperPanelApi.ensureHelperTheme(document);
+    }
 
-    const header = document.createElement("div");
-    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
+    const shellTitle = editJobMode
+      ? "Job import" + (editJobId ? " \u00b7 #" + editJobId : "")
+      : "Job import";
 
-    const titleEl = document.createElement("span");
-    titleEl.textContent = editJobMode
-      ? "Import Helper — Job" + (editJobId ? " #" + editJobId : "")
-      : "Import Helper";
-    titleEl.style.fontWeight = "700";
+    const shell = helperPanelApi
+      ? helperPanelApi.createHelperShell({
+          id: "servpro-teamallenssm-helper-panel",
+          title: shellTitle,
+          variant: "import",
+          settings: cachedSettings
+        })
+      : null;
 
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.textContent = "\u00d7";
-    closeBtn.title = "Hide panel";
-    closeBtn.style.cssText = "background:none;border:none;font-size:18px;line-height:1;cursor:pointer;color:#627d98;padding:0 2px;";
+    const panel = shell ? shell.panel : document.createElement("div");
+    if (!shell) {
+      panel.id = "servpro-teamallenssm-helper-panel";
+    }
 
-    const actionRow = document.createElement("div");
-    actionRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;";
+    const actionRow = shell ? shell.toolbar : document.createElement("div");
+    if (!shell) {
+      actionRow.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;";
+    }
 
     const fillButton = document.createElement("button");
     fillButton.type = "button";
-    fillButton.textContent = editJobMode ? "Update from payload" : "Fill from WorkCenter payload";
-    fillButton.style.cssText =
-      "flex:1;min-width:140px;border:1px solid #1976d2;background:#1976d2;color:#fff;border-radius:6px;padding:6px 8px;cursor:pointer;";
+    fillButton.textContent = editJobMode ? "Update from payload" : "Fill from payload";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(fillButton, "primary");
+    }
 
     const pasteJsonButton = document.createElement("button");
     pasteJsonButton.type = "button";
     pasteJsonButton.textContent = "Paste JSON";
-    pasteJsonButton.style.cssText =
-      "flex:1;min-width:100px;border:1px solid #c7d2da;background:#fff;color:#334e68;border-radius:6px;padding:6px 8px;cursor:pointer;";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(pasteJsonButton);
+    }
 
     const copyJobButton = document.createElement("button");
     copyJobButton.type = "button";
-    copyJobButton.textContent = "Copy current job (JSON)";
-    copyJobButton.style.cssText =
-      "flex:1;min-width:120px;border:1px solid #c7d2da;background:#fff;color:#334e68;border-radius:6px;padding:6px 8px;cursor:pointer;font:inherit;";
+    copyJobButton.textContent = "Copy job (JSON)";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(copyJobButton);
+    }
     const copyPlainJobButton = document.createElement("button");
     copyPlainJobButton.type = "button";
-    copyPlainJobButton.textContent = "Copy as normal text";
-    copyPlainJobButton.style.cssText = copyJobButton.style.cssText;
+    copyPlainJobButton.textContent = "Copy plain text";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(copyPlainJobButton);
+    }
     const copyJobRow = document.createElement("div");
-    copyJobRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;width:100%;";
+    copyJobRow.className = "servpro-helper-row";
     if (!editJobMode || cachedSettings.showEditCopyButton === false) {
       copyJobRow.style.display = "none";
     }
@@ -1751,32 +1699,29 @@
     const pasteNotesButton = document.createElement("button");
     pasteNotesButton.type = "button";
     pasteNotesButton.textContent = "Add notes from FNOL";
-    pasteNotesButton.title = "Add FNOL notes to the TeamAllen Notes grid (Misc)";
-    pasteNotesButton.style.cssText =
-      "flex:1;min-width:100px;border:1px solid #c7d2da;background:#fff;color:#334e68;border-radius:6px;padding:6px 8px;cursor:pointer;font:inherit;";
+    pasteNotesButton.title = "Add FNOL notes to job Notes (Misc)";
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(pasteNotesButton);
+    }
     const pasteNotesRow = document.createElement("div");
-    pasteNotesRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;width:100%;";
+    pasteNotesRow.className = "servpro-helper-row";
     pasteNotesRow.style.display = "none";
 
     const historyLabel = document.createElement("div");
-    historyLabel.textContent = "Choose scraped record:";
-    historyLabel.style.marginTop = "8px";
+    historyLabel.className = "servpro-helper-label";
+    historyLabel.textContent = "History";
 
     const historySelect = document.createElement("select");
-    historySelect.style.cssText = "width:100%;margin-top:4px;padding:6px;border:1px solid #c7d2da;border-radius:6px;background:#fff;";
+    historySelect.className = "servpro-helper-select";
 
     let jobDefaultModeControl = null;
-
-    const status = document.createElement("div");
-    status.className = "servpro-teamallenssm-status";
-    status.style.marginTop = "8px";
-    status.style.color = "#334e68";
-    status.textContent = "Ready";
 
     let selectedHistoryIndex = -1;
 
     function setStatus(message) {
-      status.textContent = message;
+      if (shell) {
+        shell.setStatus(message);
+      }
     }
 
     function summarizePayload(payload, index) {
@@ -2011,31 +1956,24 @@
       });
     });
 
-    header.appendChild(titleEl);
-    header.appendChild(closeBtn);
-
     actionRow.appendChild(fillButton);
     actionRow.appendChild(pasteJsonButton);
 
-    panel.appendChild(header);
-    panel.appendChild(actionRow);
+    const body = shell ? shell.body : panel;
     copyJobRow.appendChild(copyJobButton);
     copyJobRow.appendChild(copyPlainJobButton);
-    panel.appendChild(copyJobRow);
+    body.appendChild(copyJobRow);
     pasteNotesRow.appendChild(pasteNotesButton);
-    panel.appendChild(pasteNotesRow);
-    panel.appendChild(historyLabel);
-    panel.appendChild(historySelect);
-    panel.appendChild(status);
+    body.appendChild(pasteNotesRow);
+    body.appendChild(historyLabel);
+    body.appendChild(historySelect);
+
     if (jsonEditor) {
-      panel.appendChild(jsonEditor.element);
+      body.appendChild(jsonEditor.element);
     }
     document.body.appendChild(panel);
 
-    const collapseControl = makeCollapsible(panel, "SP Helper \u25b2");
-    closeBtn.addEventListener("click", function onClose() {
-      collapseControl.collapse();
-    });
+    const collapseControl = shell ? shell.mountCollapse("Job import") : { collapse: function noop() {} };
     if (cachedSettings.autoCollapsePanels !== false) {
       collapseControl.collapse();
     }
@@ -2048,7 +1986,7 @@
         storedJobDefaultMode || cachedSettings.defaultJobModeOnFill
       );
       jobDefaultModeControl = createJobDefaultModeControl(initialMode);
-      panel.insertBefore(jobDefaultModeControl.element, status);
+      body.insertBefore(jobDefaultModeControl.element, historyLabel);
       if (history.length || latest) {
         setStatus(editJobMode ? "Ready. Paste JSON or click Update." : "Ready. Paste JSON or click Fill.");
       } else {
@@ -2095,6 +2033,7 @@
       }
       if (changes[settingsApi.SETTINGS_KEY]) {
         cachedSettings = settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue);
+        syncPanelThemes(cachedSettings);
         const listPanel = document.getElementById("servpro-teamallenssm-list-panel");
         const helperPanel = document.getElementById("servpro-teamallenssm-helper-panel");
         if (!isTeamAllenFeatureEnabled()) {

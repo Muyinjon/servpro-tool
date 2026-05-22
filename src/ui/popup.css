@@ -1,0 +1,92 @@
+body {
+  margin: 0;
+  min-width: 240px;
+  max-width: 260px;
+  font: 12px/1.35 var(--sp-font);
+  color: var(--sp-text);
+  background: var(--sp-bg);
+}
+
+.popup-wrap {
+  padding: 10px 10px 12px;
+}
+
+.popup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.popup-head img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.popup-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.popup-head h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.popup-sub {
+  margin: 1px 0 0;
+  font-size: 10px;
+  color: var(--sp-text-muted);
+}
+
+.popup-sub.ok {
+  color: var(--sp-success);
+}
+
+.popup-theme-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.popup-theme-row label {
+  font-size: 10px;
+  color: var(--sp-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.popup-theme-row input {
+  accent-color: var(--sp-accent);
+}
+
+.popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.popup-actions .sp-btn {
+  width: 100%;
+}
+
+.popup-actions .sp-btn.hidden {
+  display: none;
+}
+
+.popup-status {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--sp-text-muted);
+  min-height: 14px;
+}
+
+.popup-status.error {
+  color: var(--sp-danger);
+}
