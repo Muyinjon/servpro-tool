@@ -90,3 +90,23 @@ body {
 .popup-status.error {
   color: var(--sp-danger);
 }
+
+.popup-sub.error {
+  color: var(--sp-danger);
+}
+
+.popup-upsell {
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--sp-text-muted);
+  line-height: 1.5;
+}
+
+.popup-upsell.hidden {
+  display: none;
+}
+
+.popup-upsell-link {
+  color: var(--sp-accent);
+  text-decoration: underline;
+}

@@ -4,11 +4,31 @@
   const SETTINGS_KEY = "servproUploadHelper.settings";
   const PENDING_AUTO_SUBMIT_KEY = "servproUploadHelper.pendingTeamAllenAutoSubmit";
   const PENDING_NOTES_PASTE_KEY = "servproUploadHelper.pendingTeamAllenNotesPaste";
-  const ACTIVATION_CODE = "TeamAllenSSM";
   const PENDING_STALE_MS = 10 * 60 * 1000;
+  const TRIAL_DAYS = 7;
+  const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
+  const CONTACT_EMAIL = "Ceoturobov@gmail.com";
+
+  // Registry: code string → tier name.
+  // To add a new company: add one entry here.
+  const TENANT_CODES = {
+    "TeamAllenSSM": "teamallenssm",
+    "muyin1234": "trial"
+  };
+
+  // Registry: tier name → submit handler name.
+  // Tiers absent from this map fall back to the "generic" handler (save + copy, no redirect).
+  // To add a new company with its own site integration, add one entry here.
+  const TENANT_SUBMIT = {
+    "teamallenssm": "teamallenssm"
+    // future: "acmecorp": "acmecorp"
+  };
 
   const DEFAULT_SETTINGS = {
     darkMode: false,
+    activationTier: "none",
+    trialStartedAt: null,
+    // kept for backward-compat reads but no longer written as primary flag
     teamAllenActivated: false,
     hideListPanel: false,
     hideAddEditHelperPanel: false,
@@ -17,7 +37,13 @@
     teamAllenAddJobUi: "modal",
     fnolAutoSave: true,
     fnolPasteNotesAfterSave: true,
-    showEditCopyButton: true
+    showEditCopyButton: true,
+    fnolDefaultPropertyType: "",
+    fnolDefaultPayType: "",
+    fnolDefaultBusinessUnit: "",
+    fnolDefaultJobStatus: "",
+    fnolClearAfterSubmit: false,
+    fnolCopyOnSubmit: false
   };
 
   function getStorage() {
@@ -59,6 +85,26 @@
     return null;
   }
 
+  function resolveActivationTier(record) {
+    if (!record) {
+      return "none";
+    }
+    // New-style tier already stored
+    const storedTier = String(record.activationTier || "").trim();
+    if (storedTier === "teamallenssm" || storedTier === "trial") {
+      return storedTier;
+    }
+    // Backward compat: legacy boolean flag
+    if (
+      isTruthyFlag(record.teamAllenActivated) ||
+      isTruthyFlag(record.activated) ||
+      isTruthyFlag(record.teamAllenAccess)
+    ) {
+      return "teamallenssm";
+    }
+    return "none";
+  }
+
   function mergeSettings(stored) {
     const merged = Object.assign({}, DEFAULT_SETTINGS);
     const record = normalizeStoredRecord(stored);
@@ -71,21 +117,80 @@
       if (record.applyReconDefaultsDefault && merged.defaultJobModeOnFill === "none") {
         merged.defaultJobModeOnFill = "recon";
       }
-      if (!isTruthyFlag(merged.teamAllenActivated)) {
-        if (isTruthyFlag(record.activated)) {
-          merged.teamAllenActivated = true;
-        } else if (isTruthyFlag(record.teamAllenAccess)) {
-          merged.teamAllenActivated = true;
-        }
-      }
     }
+
+    merged.activationTier = resolveActivationTier(record);
+    // Keep legacy flag in sync for any old code that might read it
+    merged.teamAllenActivated = merged.activationTier === "teamallenssm";
+
     if (merged.defaultJobModeOnFill !== "recon" && merged.defaultJobModeOnFill !== "mitigation") {
       merged.defaultJobModeOnFill = "none";
     }
     merged.teamAllenAddJobUi = merged.teamAllenAddJobUi === "page" ? "page" : "modal";
-    merged.teamAllenActivated = isTruthyFlag(merged.teamAllenActivated);
+
+    // Preserve trialStartedAt if present
+    if (record && record.trialStartedAt) {
+      merged.trialStartedAt = record.trialStartedAt;
+    } else {
+      merged.trialStartedAt = null;
+    }
+
     return merged;
   }
+
+  // --- Tier helpers ---
+
+  function getActivationTier(settings) {
+    const merged = mergeSettings(settings);
+    return merged.activationTier || "none";
+  }
+
+  function isTrialExpired(settings) {
+    const merged = mergeSettings(settings);
+    if (merged.activationTier !== "trial") {
+      return false;
+    }
+    if (!merged.trialStartedAt) {
+      return false;
+    }
+    const at = Date.parse(merged.trialStartedAt);
+    if (Number.isNaN(at)) {
+      return false;
+    }
+    return Date.now() - at > TRIAL_MS;
+  }
+
+  function isTrialActivated(settings) {
+    const merged = mergeSettings(settings);
+    return merged.activationTier === "trial" && !isTrialExpired(merged);
+  }
+
+  function isTeamAllenActivated(settings) {
+    const merged = mergeSettings(settings);
+    return merged.activationTier === "teamallenssm";
+  }
+
+  function isAnyActivated(settings) {
+    return isTrialActivated(settings) || isTeamAllenActivated(settings);
+  }
+
+  function getTrialDaysRemaining(settings) {
+    const merged = mergeSettings(settings);
+    if (merged.activationTier !== "trial" || !merged.trialStartedAt) {
+      return 0;
+    }
+    const at = Date.parse(merged.trialStartedAt);
+    if (Number.isNaN(at)) {
+      return 0;
+    }
+    const msLeft = TRIAL_MS - (Date.now() - at);
+    if (msLeft <= 0) {
+      return 0;
+    }
+    return Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+  }
+
+  // --- Pending options ---
 
   function normalizePendingOptions(options) {
     if (options === true) {
@@ -118,6 +223,8 @@
     return Date.now() - at > PENDING_STALE_MS;
   }
 
+  // --- Storage helpers ---
+
   function getSettings(callback) {
     const storage = getStorage();
     if (!storage) {
@@ -125,20 +232,7 @@
       return;
     }
     storage.get([SETTINGS_KEY], function onLoad(result) {
-      const merged = mergeSettings(result && result[SETTINGS_KEY]);
-      if (!merged.teamAllenActivated) {
-        callback(merged);
-        return;
-      }
-      const raw = result && result[SETTINGS_KEY];
-      const rawRecord = normalizeStoredRecord(raw);
-      if (rawRecord && !isTruthyFlag(rawRecord.teamAllenActivated)) {
-        saveSettings({ teamAllenActivated: true }, function onMigrated() {
-          callback(mergeSettings(Object.assign({}, rawRecord, { teamAllenActivated: true })));
-        });
-        return;
-      }
-      callback(merged);
+      callback(mergeSettings(result && result[SETTINGS_KEY]));
     });
   }
 
@@ -161,13 +255,31 @@
   }
 
   function activateWithCode(code, callback) {
-    if (String(code || "").trim() === ACTIVATION_CODE) {
-      saveSettings({ teamAllenActivated: true }, callback);
+    const trimmed = String(code || "").trim();
+    const tier = TENANT_CODES[trimmed];
+    if (!tier) {
+      if (typeof callback === "function") {
+        callback(false, mergeSettings(null));
+      }
       return;
     }
-    if (typeof callback === "function") {
-      callback(false, mergeSettings(null));
-    }
+    getSettings(function onLoaded(current) {
+      const patch = { activationTier: tier };
+      // Only set trialStartedAt the first time a trial code is entered
+      if (tier === "trial" && !current.trialStartedAt) {
+        patch.trialStartedAt = new Date().toISOString();
+      }
+      saveSettings(patch, callback);
+    });
+  }
+
+  function resetActivation(callback) {
+    saveSettings({ activationTier: "none", teamAllenActivated: false, trialStartedAt: null }, callback);
+  }
+
+  function resolveTeamAllenOpenVia(settings) {
+    const merged = mergeSettings(settings);
+    return merged.teamAllenAddJobUi === "page" ? "page" : "modal";
   }
 
   function setPendingAutoSubmit(options, callback) {
@@ -220,11 +332,6 @@
         }
       });
     });
-  }
-
-  function resolveTeamAllenOpenVia(settings) {
-    const merged = mergeSettings(settings);
-    return merged.teamAllenAddJobUi === "page" ? "page" : "modal";
   }
 
   function getPendingAutoSubmit(callback) {
@@ -283,25 +390,32 @@
     setPendingNotesPaste("", callback);
   }
 
-  function isTeamAllenActivated(settings) {
-    const merged = mergeSettings(settings);
-    return merged.teamAllenActivated === true;
-  }
-
-  function resetActivation(callback) {
-    saveSettings({ teamAllenActivated: false }, callback);
+  function getSubmitHandler(settings) {
+    const tier = getActivationTier(settings);
+    return TENANT_SUBMIT[tier] || "generic";
   }
 
   root.settings = {
     SETTINGS_KEY,
     PENDING_AUTO_SUBMIT_KEY,
     PENDING_NOTES_PASTE_KEY,
-    ACTIVATION_CODE,
+    TENANT_CODES,
+    TENANT_SUBMIT,
+    TRIAL_DAYS,
+    CONTACT_EMAIL,
     DEFAULT_SETTINGS,
     mergeSettings,
     getSettings,
     saveSettings,
     activateWithCode,
+    resetActivation,
+    getActivationTier,
+    isTrialActivated,
+    isTrialExpired,
+    isTeamAllenActivated,
+    isAnyActivated,
+    getTrialDaysRemaining,
+    getSubmitHandler,
     setPendingAutoSubmit,
     patchPendingAutoSubmit,
     getPendingAutoSubmit,
@@ -311,8 +425,6 @@
     setPendingNotesPaste,
     getPendingNotesPaste,
     clearPendingNotesPaste,
-    resolveTeamAllenOpenVia,
-    resetActivation,
-    isTeamAllenActivated
+    resolveTeamAllenOpenVia
   };
 })(typeof window !== "undefined" ? window : self);

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ServPro Helper - WorkCenter Help",
-  "description": "Helper tools for Servpro WorkCenter uploads.",
-  "version": "0.4.0",
+  "name": "ServPro Helper",
+  "description": "Workflow tools for SERVPRO franchises — job import, FNOL, and WorkCenter integration.",
+  "version": "0.5.0",
   "action": {
     "default_popup": "popup.html",
     "default_title": "ServPro Helper",

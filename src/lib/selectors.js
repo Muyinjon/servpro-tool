@@ -275,7 +275,7 @@
     SETTINGS_KEY: settingsApi.SETTINGS_KEY || "servproUploadHelper.settings",
     PENDING_AUTO_SUBMIT_KEY:
       settingsApi.PENDING_AUTO_SUBMIT_KEY || "servproUploadHelper.pendingTeamAllenAutoSubmit",
-    ACTIVATION_CODE: settingsApi.ACTIVATION_CODE || "TeamAllenSSM",
+    TENANT_CODES: settingsApi.TENANT_CODES || { "TeamAllenSSM": "teamallenssm" },
     DEFAULT_SETTINGS: settingsApi.DEFAULT_SETTINGS,
     TEAMALLENSSM_FIELD_MAP,
     WORKCENTER_SELECTORS: fieldsApi.WORKCENTER_SELECTORS,

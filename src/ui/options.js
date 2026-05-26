@@ -1,229 +1,327 @@
-(function initOptionsPage() {
-  const settingsApi = window.ServproUploadExtension && window.ServproUploadExtension.settings;
-  if (!settingsApi) {
-    return;
-  }
-
-  const activationActiveBlock = document.getElementById("activationActiveBlock");
-  const activationForm = document.getElementById("activationForm");
-  const activationCode = document.getElementById("activationCode");
-  const activateBtn = document.getElementById("activateBtn");
-  const resetActivationBtn = document.getElementById("resetActivationBtn");
-  const activationStatus = document.getElementById("activationStatus");
-  const teamToolsSection = document.getElementById("teamToolsSection");
-  const saveSettingsBtn = document.getElementById("saveSettingsBtn");
-  const settingsStatus = document.getElementById("settingsStatus");
-  const openFnolLink = document.getElementById("openFnolLink");
-  const defaultJobModeOnFill = document.getElementById("defaultJobModeOnFill");
-  const teamAllenAddJobUi = document.getElementById("teamAllenAddJobUi");
-  const darkModeCheckbox = document.getElementById("darkMode");
-
-  const teamCheckboxIds = [
-    "hideListPanel",
-    "hideAddEditHelperPanel",
-    "autoCollapsePanels",
-    "fnolAutoSave",
-    "fnolPasteNotesAfterSave",
-    "showEditCopyButton"
-  ];
-
-  function fnolPageUrl() {
-    return chrome.runtime.getURL("fnol.html");
-  }
-
-  if (openFnolLink) {
-    openFnolLink.href = fnolPageUrl();
-    openFnolLink.addEventListener("click", function onOpenFnol(e) {
-      e.preventDefault();
-      chrome.tabs.create({ url: fnolPageUrl() });
-    });
-  }
-
-  function setStatus(el, message, kind) {
-    if (!el) {
-      return;
-    }
-    el.textContent = message || "";
-    el.className = "sp-status" + (kind ? " " + kind : "");
-  }
-
-  function setTeamToolsVisible(activated) {
-    if (!teamToolsSection) {
-      return;
-    }
-    if (activated) {
-      teamToolsSection.hidden = false;
-      teamToolsSection.classList.remove("sp-hidden");
-    } else {
-      teamToolsSection.hidden = true;
-      teamToolsSection.classList.add("sp-hidden");
-    }
-    if (activationActiveBlock) {
-      if (activated) {
-        activationActiveBlock.classList.remove("sp-hidden");
-        if (activationForm) {
-          activationForm.style.display = "none";
-        }
-      } else {
-        activationActiveBlock.classList.add("sp-hidden");
-        if (activationForm) {
-          activationForm.style.display = "block";
-        }
-      }
-    }
-  }
-
-  function readPublicSettingsFromForm() {
-    return {
-      darkMode: darkModeCheckbox ? darkModeCheckbox.checked : false
-    };
-  }
-
-  function readTeamSettingsFromForm() {
-    const partial = {};
-    teamCheckboxIds.forEach(function eachId(id) {
-      const el = document.getElementById(id);
-      if (el) {
-        partial[id] = el.checked;
-      }
-    });
-    if (defaultJobModeOnFill) {
-      partial.defaultJobModeOnFill = defaultJobModeOnFill.value || "none";
-    }
-    if (teamAllenAddJobUi) {
-      partial.teamAllenAddJobUi = teamAllenAddJobUi.value === "page" ? "page" : "modal";
-    }
-    return partial;
-  }
-
-  function applySettingsToForm(settings) {
-    if (darkModeCheckbox && settings) {
-      darkModeCheckbox.checked = Boolean(settings.darkMode);
-    }
-    teamCheckboxIds.forEach(function eachId(id) {
-      const el = document.getElementById(id);
-      if (el && settings) {
-        el.checked = Boolean(settings[id]);
-      }
-    });
-    if (defaultJobModeOnFill && settings) {
-      const mode = settings.defaultJobModeOnFill || "none";
-      defaultJobModeOnFill.value =
-        mode === "recon" || mode === "mitigation" ? mode : "none";
-    }
-    if (teamAllenAddJobUi && settings) {
-      teamAllenAddJobUi.value = settings.teamAllenAddJobUi === "page" ? "page" : "modal";
-    }
-    setTeamToolsVisible(settingsApi.isTeamAllenActivated(settings));
-  }
-
-  function savePublicSettings() {
-    settingsApi.saveSettings(readPublicSettingsFromForm());
-  }
-
-  settingsApi.getSettings(function onLoad(settings) {
-    applySettingsToForm(settings);
-  });
-
-  if (chrome.storage && chrome.storage.onChanged) {
-    chrome.storage.onChanged.addListener(function onStorageChanged(changes, areaName) {
-      if (areaName !== "local" || !changes[settingsApi.SETTINGS_KEY]) {
-        return;
-      }
-      applySettingsToForm(
-        settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue)
-      );
-    });
-  }
-
-  if (darkModeCheckbox) {
-    darkModeCheckbox.addEventListener("change", function onDarkModeChange() {
-      savePublicSettings();
-    });
-  }
-
-  activateBtn.addEventListener("click", function onActivate() {
-    settingsApi.activateWithCode(activationCode.value, function onDone(ok, settings) {
-      if (ok) {
-        setStatus(activationStatus, "Team tools unlocked.", "ok");
-        if (activationCode) {
-          activationCode.value = "";
-        }
-        applySettingsToForm(settings);
-      } else {
-        setStatus(activationStatus, "Invalid code.", "error");
-      }
-    });
-  });
-
-  if (resetActivationBtn) {
-    resetActivationBtn.addEventListener("click", function onReset() {
-      settingsApi.resetActivation(function onResetDone(ok, settings) {
-        if (ok) {
-          setStatus(activationStatus, "Access code cleared.", "ok");
-          if (activationCode) {
-            activationCode.value = "";
-            activationCode.focus();
-          }
-          applySettingsToForm(settings);
-        } else {
-          setStatus(activationStatus, "Failed to reset access code.", "error");
-        }
-      });
-    });
-  }
-
-  activationCode.addEventListener("keydown", function onKey(e) {
-    if (e.key === "Enter") {
-      activateBtn.click();
-    }
-  });
-
-  saveSettingsBtn.addEventListener("click", function onSave() {
-    settingsApi.getSettings(function onLoaded(current) {
-      if (!settingsApi.isTeamAllenActivated(current)) {
-        setStatus(settingsStatus, "Enter team access code first.", "error");
-        return;
-      }
-      settingsApi.saveSettings(readTeamSettingsFromForm(), function onSaved(ok) {
-        setStatus(settingsStatus, ok ? "Import settings saved." : "Failed to save.", ok ? "ok" : "error");
-      });
-    });
-  });
-
-  teamCheckboxIds.forEach(function eachId(id) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("change", function onToggle() {
-        settingsApi.getSettings(function onLoaded(current) {
-          if (!settingsApi.isTeamAllenActivated(current)) {
-            return;
-          }
-          settingsApi.saveSettings(readTeamSettingsFromForm());
-        });
-      });
-    }
-  });
-
-  if (defaultJobModeOnFill) {
-    defaultJobModeOnFill.addEventListener("change", function onModeChange() {
-      settingsApi.getSettings(function onLoaded(current) {
-        if (!settingsApi.isTeamAllenActivated(current)) {
-          return;
-        }
-        settingsApi.saveSettings(readTeamSettingsFromForm());
-      });
-    });
-  }
-
-  if (teamAllenAddJobUi) {
-    teamAllenAddJobUi.addEventListener("change", function onAddJobUiChange() {
-      settingsApi.getSettings(function onLoaded(current) {
-        if (!settingsApi.isTeamAllenActivated(current)) {
-          return;
-        }
-        settingsApi.saveSettings(readTeamSettingsFromForm());
-      });
-    });
-  }
-})();
+(function initOptionsPage() {
+  const settingsApi = window.ServproUploadExtension && window.ServproUploadExtension.settings;
+  if (!settingsApi) {
+    return;
+  }
+
+  const upsellBlock = document.getElementById("upsellBlock");
+  const trialActiveBlock = document.getElementById("trialActiveBlock");
+  const trialActiveStatus = document.getElementById("trialActiveStatus");
+  const activationActiveBlock = document.getElementById("activationActiveBlock");
+  const activationForm = document.getElementById("activationForm");
+  const activationCode = document.getElementById("activationCode");
+  const activateBtn = document.getElementById("activateBtn");
+  const resetActivationBtn = document.getElementById("resetActivationBtn");
+  const resetActivationBtn2 = document.getElementById("resetActivationBtn2");
+  const activationStatus = document.getElementById("activationStatus");
+  const fnolAccessStatus = document.getElementById("fnolAccessStatus");
+  const activationCard = document.getElementById("activationCard");
+  const teamAllenToolsSection = document.getElementById("teamAllenToolsSection");
+  const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+  const settingsStatus = document.getElementById("settingsStatus");
+  const openFnolLink = document.getElementById("openFnolLink");
+  const defaultJobModeOnFill = document.getElementById("defaultJobModeOnFill");
+  const teamAllenAddJobUi = document.getElementById("teamAllenAddJobUi");
+  const darkModeCheckbox = document.getElementById("darkMode");
+
+  // Selects for new FNOL default settings
+  const fnolDefaultPropertyType = document.getElementById("fnolDefaultPropertyType");
+  const fnolDefaultPayType = document.getElementById("fnolDefaultPayType");
+  const fnolDefaultBusinessUnit = document.getElementById("fnolDefaultBusinessUnit");
+  const fnolDefaultJobStatus = document.getElementById("fnolDefaultJobStatus");
+
+  const teamCheckboxIds = [
+    "hideListPanel",
+    "hideAddEditHelperPanel",
+    "autoCollapsePanels",
+    "fnolAutoSave",
+    "fnolPasteNotesAfterSave",
+    "showEditCopyButton",
+    "fnolClearAfterSubmit",
+    "fnolCopyOnSubmit"
+  ];
+
+  // All team-settings selects (besides the two legacy ones)
+  const fnolSelectIds = [
+    "fnolDefaultPropertyType",
+    "fnolDefaultPayType",
+    "fnolDefaultBusinessUnit",
+    "fnolDefaultJobStatus"
+  ];
+
+  function fnolPageUrl() {
+    return chrome.runtime.getURL("fnol.html");
+  }
+
+  if (openFnolLink) {
+    openFnolLink.href = fnolPageUrl();
+    openFnolLink.addEventListener("click", function onOpenFnol(e) {
+      e.preventDefault();
+      settingsApi.getSettings(function onLoaded(settings) {
+        if (settingsApi.isAnyActivated(settings)) {
+          chrome.tabs.create({ url: fnolPageUrl() });
+        } else {
+          // Show inline upsell and scroll activation card into view
+          if (fnolAccessStatus) {
+            const email = settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com";
+            fnolAccessStatus.textContent =
+              "An access code is required. Email " + email +
+              " to get one.";
+            fnolAccessStatus.className = "sp-status error";
+          }
+          if (activationCard) {
+            activationCard.scrollIntoView({ behavior: "smooth", block: "center" });
+            activationCard.classList.add("sp-highlight");
+            setTimeout(function removeHighlight() {
+              activationCard.classList.remove("sp-highlight");
+            }, 2000);
+          }
+          if (activationCode) {
+            activationCode.focus();
+          }
+        }
+      });
+    });
+  }
+
+  function setStatus(el, message, kind) {
+    if (!el) {
+      return;
+    }
+    el.textContent = message || "";
+    el.className = "sp-status" + (kind ? " " + kind : "");
+  }
+
+  function showEl(el, visible) {
+    if (!el) {
+      return;
+    }
+    if (visible) {
+      el.hidden = false;
+      el.classList.remove("sp-hidden");
+    } else {
+      el.hidden = true;
+      el.classList.add("sp-hidden");
+    }
+  }
+
+  function setToolSectionsVisible(tier, settings) {
+    const isTeamAllen = tier === "teamallenssm";
+
+    // TeamAllen-only settings section
+    showEl(teamAllenToolsSection, isTeamAllen);
+
+    // Activation card state
+    const isNone = tier === "none" || tier === "trial-expired";
+    showEl(upsellBlock, isNone);
+    showEl(activationForm, isNone);
+    showEl(trialActiveBlock, tier === "trial-active");
+    showEl(activationActiveBlock, isTeamAllen);
+
+    if (tier === "trial-active" && trialActiveStatus && settings) {
+      const days = settingsApi.getTrialDaysRemaining(settings);
+      trialActiveStatus.textContent =
+        days === 1
+          ? "Trial active \u2014 1 day remaining."
+          : days > 0
+            ? "Trial active \u2014 " + days + " days remaining."
+            : "Trial active \u2014 expiring today.";
+    }
+
+    if (tier === "trial-expired" && activationStatus) {
+      setStatus(
+        activationStatus,
+        "Your trial has expired. Email " + (settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com") +
+          " to get a full access code.",
+        "error"
+      );
+    }
+
+    // Clear the FNOL access status message when tier is now active
+    if (tier !== "none" && tier !== "trial-expired" && fnolAccessStatus) {
+      setStatus(fnolAccessStatus, "", "");
+    }
+  }
+
+  function resolveTierUiState(settings) {
+    const tier = settingsApi.getActivationTier(settings);
+    if (tier === "trial") {
+      return settingsApi.isTrialExpired(settings) ? "trial-expired" : "trial-active";
+    }
+    return tier; // "none" or "teamallenssm"
+  }
+
+  function readPublicSettingsFromForm() {
+    return {
+      darkMode: darkModeCheckbox ? darkModeCheckbox.checked : false
+    };
+  }
+
+  function readTeamSettingsFromForm() {
+    const partial = {};
+    teamCheckboxIds.forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        partial[id] = el.checked;
+      }
+    });
+    if (defaultJobModeOnFill) {
+      partial.defaultJobModeOnFill = defaultJobModeOnFill.value || "none";
+    }
+    if (teamAllenAddJobUi) {
+      partial.teamAllenAddJobUi = teamAllenAddJobUi.value === "page" ? "page" : "modal";
+    }
+    fnolSelectIds.forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        partial[id] = el.value || "";
+      }
+    });
+    return partial;
+  }
+
+  function applySettingsToForm(settings) {
+    if (darkModeCheckbox && settings) {
+      darkModeCheckbox.checked = Boolean(settings.darkMode);
+    }
+    teamCheckboxIds.forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el && settings) {
+        el.checked = Boolean(settings[id]);
+      }
+    });
+    if (defaultJobModeOnFill && settings) {
+      const mode = settings.defaultJobModeOnFill || "none";
+      defaultJobModeOnFill.value =
+        mode === "recon" || mode === "mitigation" ? mode : "none";
+    }
+    if (teamAllenAddJobUi && settings) {
+      teamAllenAddJobUi.value = settings.teamAllenAddJobUi === "page" ? "page" : "modal";
+    }
+    fnolSelectIds.forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el && settings && settings[id] !== undefined) {
+        el.value = settings[id] || "";
+      }
+    });
+    setToolSectionsVisible(resolveTierUiState(settings), settings);
+  }
+
+  function savePublicSettings() {
+    settingsApi.saveSettings(readPublicSettingsFromForm());
+  }
+
+  function autoSaveTeamSettings() {
+    settingsApi.getSettings(function onLoaded(current) {
+      if (!settingsApi.isTeamAllenActivated(current)) {
+        return;
+      }
+      settingsApi.saveSettings(readTeamSettingsFromForm());
+    });
+  }
+
+  settingsApi.getSettings(function onLoad(settings) {
+    applySettingsToForm(settings);
+  });
+
+  if (chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener(function onStorageChanged(changes, areaName) {
+      if (areaName !== "local" || !changes[settingsApi.SETTINGS_KEY]) {
+        return;
+      }
+      applySettingsToForm(
+        settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue)
+      );
+    });
+  }
+
+  if (darkModeCheckbox) {
+    darkModeCheckbox.addEventListener("change", function onDarkModeChange() {
+      savePublicSettings();
+    });
+  }
+
+  activateBtn.addEventListener("click", function onActivate() {
+    settingsApi.activateWithCode(activationCode.value, function onDone(ok, settings) {
+      if (ok) {
+        setStatus(activationStatus, "", "");
+        if (activationCode) {
+          activationCode.value = "";
+        }
+        applySettingsToForm(settings);
+        const tier = settingsApi.getActivationTier(settings);
+        if (tier === "trial") {
+          setStatus(activationStatus, "Trial activated!", "ok");
+        } else {
+          setStatus(activationStatus, "Team tools unlocked.", "ok");
+        }
+      } else {
+        setStatus(activationStatus, "Invalid code.", "error");
+      }
+    });
+  });
+
+  function doReset() {
+    settingsApi.resetActivation(function onResetDone(ok, settings) {
+      if (ok) {
+        setStatus(activationStatus, "Access code cleared.", "ok");
+        if (activationCode) {
+          activationCode.value = "";
+          activationCode.focus();
+        }
+        applySettingsToForm(settings);
+      } else {
+        setStatus(activationStatus, "Failed to reset access code.", "error");
+      }
+    });
+  }
+
+  if (resetActivationBtn) {
+    resetActivationBtn.addEventListener("click", doReset);
+  }
+  if (resetActivationBtn2) {
+    resetActivationBtn2.addEventListener("click", doReset);
+  }
+
+  activationCode.addEventListener("keydown", function onKey(e) {
+    if (e.key === "Enter") {
+      activateBtn.click();
+    }
+  });
+
+  if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener("click", function onSave() {
+      settingsApi.getSettings(function onLoaded(current) {
+        if (!settingsApi.isTeamAllenActivated(current)) {
+          setStatus(settingsStatus, "These settings require a full team access code.", "error");
+          return;
+        }
+        settingsApi.saveSettings(readTeamSettingsFromForm(), function onSaved(ok) {
+          setStatus(settingsStatus, ok ? "Settings saved." : "Failed to save.", ok ? "ok" : "error");
+        });
+      });
+    });
+  }
+
+  teamCheckboxIds.forEach(function eachId(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", autoSaveTeamSettings);
+    }
+  });
+
+  fnolSelectIds.forEach(function eachId(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", autoSaveTeamSettings);
+    }
+  });
+
+  if (defaultJobModeOnFill) {
+    defaultJobModeOnFill.addEventListener("change", autoSaveTeamSettings);
+  }
+
+  if (teamAllenAddJobUi) {
+    teamAllenAddJobUi.addEventListener("change", autoSaveTeamSettings);
+  }
+})();

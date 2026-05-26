@@ -28,8 +28,11 @@
   const fnolUnlockStatus = document.getElementById("fnolUnlockStatus");
   const fnolForm = document.getElementById("fnolForm");
   const fnolCustomer = document.getElementById("fnolCustomer");
+  const fnolSubmitBtn = document.getElementById("fnolSubmitBtn");
+  const fnolNewEntryBtn = document.getElementById("fnolNewEntryBtn");
   const fnolClearBtn = document.getElementById("fnolClearBtn");
   const fnolCopyPlainBtn = document.getElementById("fnolCopyPlainBtn");
+  const fnolCopyJsonBtn = document.getElementById("fnolCopyJsonBtn");
   const fnolLossType = document.getElementById("fnolLossType");
   const fnolJobList = document.getElementById("fnolJobList");
   const fnolJobEmpty = document.getElementById("fnolJobEmpty");
@@ -91,7 +94,15 @@
     }
   }
 
-  function setActivated(activated, options) {
+  function updateSubmitButtonLabel(settings) {
+    if (!fnolSubmitBtn) {
+      return;
+    }
+    const handler = settingsApi.getSubmitHandler ? settingsApi.getSubmitHandler(settings) : "generic";
+    fnolSubmitBtn.textContent = handler === "teamallenssm" ? "Submit new job" : "Save & copy";
+  }
+
+  function setActivated(activated, options, settings) {
     const wasLocked = fnolFormPanel && fnolFormPanel.classList.contains("is-locked");
     if (fnolFormPanel) {
       fnolFormPanel.classList.toggle("is-locked", !activated);
@@ -108,6 +119,13 @@
         focusFirstField();
       }
     }
+    if (settings) {
+      updateSubmitButtonLabel(settings);
+    } else {
+      settingsApi.getSettings(function onLoadedForLabel(s) {
+        updateSubmitButtonLabel(s);
+      });
+    }
   }
 
   function readActivationFromStorage(callback) {
@@ -117,7 +135,7 @@
     }
     chrome.storage.local.get([settingsApi.SETTINGS_KEY], function onLoad(result) {
       const settings = settingsApi.mergeSettings(result && result[settingsApi.SETTINGS_KEY]);
-      callback(settingsApi.isTeamAllenActivated(settings), settings);
+      callback(settingsApi.isAnyActivated(settings), settings);
     });
   }
 
@@ -135,12 +153,12 @@
         if (fnolAccessCode) {
           fnolAccessCode.value = "";
         }
-        setActivated(true, { focus: true });
+        setActivated(true, { focus: true }, settings);
         setStatus("");
         return;
       }
       setUnlockStatus("Invalid code. Use the same code as in Settings.", "error");
-      setActivated(settingsApi.isTeamAllenActivated(settings));
+      setActivated(settingsApi.isAnyActivated(settings), null, settings);
     });
   }
 
@@ -544,9 +562,41 @@
       : WORKCENTER_IMPORT.teamallenssmAddUrl;
   }
 
+  // Maps settings keys to the form field name used in fnolForm.elements
+  const FNOL_DEFAULT_FIELD_MAP = {
+    fnolDefaultPropertyType: "propertyType",
+    fnolDefaultPayType: "payType",
+    fnolDefaultBusinessUnit: "businessUnit",
+    fnolDefaultJobStatus: "jobStatus"
+  };
+
+  function applyFnolDefaults(settings) {
+    if (!fnolForm || !settings) {
+      return;
+    }
+    Object.keys(FNOL_DEFAULT_FIELD_MAP).forEach(function applyField(settingKey) {
+      const defaultValue = settings[settingKey];
+      if (!defaultValue) {
+        return;
+      }
+      const fieldName = FNOL_DEFAULT_FIELD_MAP[settingKey];
+      const el = fnolForm.elements.namedItem(fieldName);
+      if (!el) {
+        return;
+      }
+      // Only apply if the field is currently blank
+      if (!el.value) {
+        el.value = defaultValue;
+      }
+    });
+  }
+
   function refreshActivationState() {
-    readActivationFromStorage(function onRead(activated) {
-      setActivated(activated);
+    readActivationFromStorage(function onRead(activated, settings) {
+      setActivated(activated, null, settings);
+      if (activated) {
+        applyFnolDefaults(settings);
+      }
     });
   }
 
@@ -556,7 +606,7 @@
         return;
       }
       const settings = settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue);
-      setActivated(settingsApi.isTeamAllenActivated(settings));
+      setActivated(settingsApi.isAnyActivated(settings), null, settings);
     });
   }
 
@@ -609,12 +659,29 @@
   loadFnolRegistry();
   refreshActivationState();
 
-  fnolClearBtn.addEventListener("click", function onClear() {
+  function startNewEntry() {
     fnolForm.reset();
     setActiveJobIndex(-1);
     setStatus("");
     updateFnolNotesCounter();
-  });
+    settingsApi.getSettings(function onLoaded(settings) {
+      applyFnolDefaults(settings);
+    });
+    try {
+      const firstField = fnolForm.elements.namedItem("customerName");
+      if (firstField) {
+        firstField.focus();
+      }
+    } catch (e) {
+      /* ignore focus errors */
+    }
+  }
+
+  if (fnolNewEntryBtn) {
+    fnolNewEntryBtn.addEventListener("click", startNewEntry);
+  }
+
+  fnolClearBtn.addEventListener("click", startNewEntry);
 
   if (fnolCopyPlainBtn) {
     fnolCopyPlainBtn.addEventListener("click", function onCopyPlain() {
@@ -625,12 +692,34 @@
     });
   }
 
+  if (fnolCopyJsonBtn) {
+    fnolCopyJsonBtn.addEventListener("click", function onCopyJson() {
+      const payload = buildFnolPayload();
+      let json;
+      try {
+        json = JSON.stringify(payload, null, 2);
+      } catch (e) {
+        setStatus("Could not serialize payload.", "error");
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(json).then(function ok() {
+          setStatus("Copied as JSON.", "ok");
+        }).catch(function fail() {
+          setStatus("Clipboard copy failed.", "error");
+        });
+      } else {
+        setStatus("Clipboard not available.", "error");
+      }
+    });
+  }
+
   fnolForm.addEventListener("submit", function onSubmit(e) {
     e.preventDefault();
     settingsApi.getSettings(function onLoaded(settings) {
-      if (!settingsApi.isTeamAllenActivated(settings)) {
+      if (!settingsApi.isAnyActivated(settings)) {
         setStatus("Enter access code above (or in Settings) before submitting.", "error");
-        setActivated(false);
+        setActivated(false, null, settings);
         if (fnolAccessCode) {
           fnolAccessCode.focus();
         }
@@ -651,15 +740,13 @@
         return;
       }
 
-      const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
-      setStatus(
-        openVia === "modal"
-          ? "Saving and opening jobs list (Add Job popup)…"
-          : "Saving and opening add job page…"
-      );
+      const submitHandler = settingsApi.getSubmitHandler
+        ? settingsApi.getSubmitHandler(settings)
+        : "generic";
 
       const noteText = String(payload.notes || "").trim();
 
+      // --- TeamAllen-specific submit path ---
       function queuePendingNotesPaste(done) {
         if (settings.fnolPasteNotesAfterSave !== false && noteText) {
           settingsApi.setPendingNotesPaste(noteText, done);
@@ -669,6 +756,7 @@
       }
 
       function openTeamAllenTab() {
+        const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
         const shouldAutoSave = settings.fnolAutoSave !== false;
         const targetUrl = teamAllenTargetUrl(openVia);
         if (openVia === "modal" || shouldAutoSave) {
@@ -699,6 +787,32 @@
         }
       }
 
+      // --- Generic submit path (trial + future tiers) ---
+      function genericSubmitFinish() {
+        if (plainTextApi && plainTextApi.formatPayloadAsPlainText) {
+          const plainText = plainTextApi.formatPayloadAsPlainText(payload);
+          if (plainText && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(plainText).then(function ok() {
+              setStatus("Saved. Copied as plain text \u2014 paste into your job system.", "ok");
+            }).catch(function fail() {
+              setStatus("Saved. Could not copy to clipboard.", "ok");
+            });
+            return;
+          }
+        }
+        setStatus("Saved.", "ok");
+      }
+
+      setStatus("Saving…");
+
+      if (submitHandler === "teamallenssm") {
+        setStatus(
+          settingsApi.resolveTeamAllenOpenVia(settings) === "modal"
+            ? "Saving and opening jobs list (Add Job popup)…"
+            : "Saving and opening add job page…"
+        );
+      }
+
       upsertPayloadHistory(payload, function onSaved(ok) {
         if (!ok) {
           setStatus("Failed to save payload.", "error");
@@ -707,9 +821,37 @@
         upsertFnolRegistry(payload, function onRegistrySaved() {
           /* list refreshed in upsert */
         });
-        queuePendingNotesPaste(function onNotesQueued() {
-          openTeamAllenTab();
-        });
+
+        // fnolCopyOnSubmit setting applies to TeamAllen path only (user opt-in)
+        if (submitHandler === "teamallenssm" && settings.fnolCopyOnSubmit && plainTextApi) {
+          const plainText = plainTextApi.formatPayloadAsPlainText
+            ? plainTextApi.formatPayloadAsPlainText(payload)
+            : null;
+          if (plainText && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(plainText).catch(function noop() {});
+          }
+        }
+
+        if (submitHandler === "teamallenssm") {
+          queuePendingNotesPaste(function onNotesQueued() {
+            openTeamAllenTab();
+            if (settings.fnolClearAfterSubmit) {
+              fnolForm.reset();
+              setActiveJobIndex(-1);
+              updateFnolNotesCounter();
+              applyFnolDefaults(settings);
+            }
+          });
+        } else {
+          // Generic: save + copy, no redirect
+          genericSubmitFinish();
+          if (settings.fnolClearAfterSubmit) {
+            fnolForm.reset();
+            setActiveJobIndex(-1);
+            updateFnolNotesCounter();
+            applyFnolDefaults(settings);
+          }
+        }
       });
     });
   });

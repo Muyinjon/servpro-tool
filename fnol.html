@@ -23,7 +23,10 @@
 
       <div class="fnol-layout">
         <aside class="fnol-panel fnol-history-panel">
-          <h2>Jobs entered</h2>
+          <div class="fnol-history-header">
+            <h2>Jobs entered</h2>
+            <button type="button" id="fnolNewEntryBtn" class="btn sm">New job</button>
+          </div>
           <p id="fnolJobEmpty" class="fnol-job-empty">No jobs yet — submit to save one here.</p>
           <ul id="fnolJobList" class="fnol-job-list" hidden></ul>
         </aside>
@@ -221,6 +224,7 @@
               <button type="submit" form="fnolForm" id="fnolSubmitBtn" class="btn">Submit new job</button>
               <button type="button" id="fnolClearBtn" class="btn secondary">Clear form</button>
               <button type="button" id="fnolCopyPlainBtn" class="btn secondary">Copy as normal text</button>
+              <button type="button" id="fnolCopyJsonBtn" class="btn secondary">Copy as JSON</button>
             </div>
             <div id="fnolStatus" class="status"></div>
           </div>

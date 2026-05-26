@@ -22,6 +22,37 @@ body {
   resize: vertical;
 }
 
+.sp-upsell-list {
+  margin: 8px 0 10px 18px;
+  padding: 0;
+  color: var(--sp-text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.sp-upsell-cta {
+  margin-top: 10px;
+}
+
+.sp-link {
+  color: var(--sp-accent);
+  text-decoration: underline;
+}
+
+.sp-link:hover {
+  color: var(--sp-accent-hover);
+}
+
+@keyframes sp-highlight-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(27, 67, 50, 0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(27, 67, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(27, 67, 50, 0); }
+}
+
+.sp-highlight {
+  animation: sp-highlight-pulse 1.8s ease-out;
+}
+
 @media (max-width: 480px) {
   .wrap {
     padding: 10px 10px 24px;
