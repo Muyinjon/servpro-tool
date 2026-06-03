@@ -1,5 +1,6 @@
 (function initImportPayloadPanel(global) {
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
+  const hintsApi = root.buttonHints;
 
   function normalizeText(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
@@ -140,6 +141,12 @@
     let expanded = false;
     let lastSavedPayload = null;
 
+    function syncToggleHint() {
+      if (hintsApi && hintsApi.applyButtonHint) {
+        hintsApi.applyButtonHint(toggle, expanded ? "jsonHidePayload" : "jsonShowPayload");
+      }
+    }
+
     function setJsonError(message, isWarning) {
       if (!normalizeText(message)) {
         errorEl.style.display = "none";
@@ -177,6 +184,7 @@
         expanded = true;
         editorPanel.style.display = "block";
         toggle.textContent = "Hide payload JSON";
+        syncToggleHint();
       }
       setJsonError("");
     }
@@ -189,6 +197,19 @@
       expanded = !expanded;
       editorPanel.style.display = expanded ? "block" : "none";
       toggle.textContent = expanded ? "Hide payload JSON" : "Show payload JSON";
+      syncToggleHint();
+    }
+
+    if (hintsApi && hintsApi.applyButtonHint) {
+      const apply = hintsApi.applyButtonHint;
+      apply(saveBtn, "jsonSavePayload");
+      apply(copyBtn, "jsonCopyJson");
+      apply(copyPlainBtn, "jsonCopyPlain");
+      apply(resetBtn, "jsonResetScrape");
+      if (pasteBtn) {
+        apply(pasteBtn, "jsonPasteJson");
+      }
+      syncToggleHint();
     }
 
     toggle.addEventListener("click", toggleExpanded);

@@ -34,6 +34,12 @@ body {
   margin-top: 10px;
 }
 
+.sp-subheading {
+  margin: 16px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .sp-link {
   color: var(--sp-accent);
   text-decoration: underline;

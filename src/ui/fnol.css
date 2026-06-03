@@ -329,6 +329,12 @@ body {
   margin-bottom: 3px;
 }
 
+.fnol-required-mark {
+  color: var(--sp-danger);
+  font-weight: 600;
+  margin-left: 1px;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -573,10 +579,120 @@ body {
   text-decoration: none;
 }
 
+.fnol-trial-upsell {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--sp-border, #d0d7de);
+  border-radius: 8px;
+  background: var(--sp-surface-alt, #f6f8fa);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.fnol-trial-upsell-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.fnol-trial-upsell p {
+  margin: 0 0 8px;
+}
+
+.fnol-trial-upsell p:last-child {
+  margin-bottom: 0;
+}
+
+.fnol-trial-upsell-link {
+  color: var(--sp-accent, #1b4332);
+  text-decoration: underline;
+}
+
 .fnol-form-panel.is-locked #fnolForm,
-.fnol-form-panel.is-locked .fnol-action-bar {
+.fnol-form-panel.is-locked .fnol-action-bar,
+.fnol-form-panel.is-locked .fnol-trial-upsell {
   pointer-events: none;
   opacity: 0.5;
+}
+
+.fnol-form-panel.is-locked .fnol-trial-upsell {
+  display: none;
+}
+
+/* —— Intake initials quick-entry dialog —— */
+.fnol-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.fnol-dialog-backdrop[hidden] {
+  display: none;
+}
+
+.fnol-dialog {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  padding: 24px 28px 20px;
+  width: min(340px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fnol-dialog-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--sp-text);
+}
+
+.fnol-dialog-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--sp-text-muted, var(--sp-text));
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+.fnol-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fnol-dialog-field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--sp-text);
+}
+
+.fnol-dialog-field input {
+  padding: 7px 10px;
+  border: 1px solid var(--sp-border);
+  border-radius: 6px;
+  background: var(--sp-input-bg, var(--sp-surface));
+  color: var(--sp-text);
+  font: inherit;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.fnol-dialog-field input:focus {
+  outline: 2px solid var(--sp-accent, #1b4332);
+  outline-offset: 1px;
+}
+
+.fnol-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 /* WebKit autofill: avoid bright yellow boxes in dark mode */

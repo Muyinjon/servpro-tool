@@ -7,6 +7,9 @@
   const selectorsApi = window.ServproUploadExtension && window.ServproUploadExtension.selectors;
   const fnolNotesApi = window.ServproUploadExtension && window.ServproUploadExtension.fnolNotes;
   const plainTextApi = window.ServproUploadExtension && window.ServproUploadExtension.payloadPlainText;
+  const googleFormApi =
+    window.ServproUploadExtension && window.ServproUploadExtension.googleFormTeamAllen;
+  const hintsApi = window.ServproUploadExtension && window.ServproUploadExtension.buttonHints;
   const WORKCENTER_IMPORT =
     (selectorsApi && selectorsApi.WORKCENTER_IMPORT) || {
       storageKey: "servproUploadHelper.workcenterPayload",
@@ -23,6 +26,9 @@
   const lockedSettingsLink = document.getElementById("lockedSettingsLink");
   const fnolFormPanel = document.getElementById("fnolFormPanel");
   const fnolLockedOverlay = document.getElementById("fnolLockedOverlay");
+  const fnolLockedMessage = document.getElementById("fnolLockedMessage");
+  const fnolTrialUpsell = document.getElementById("fnolTrialUpsell");
+  const fnolTrialUpsellEmail = document.getElementById("fnolTrialUpsellEmail");
   const fnolAccessCode = document.getElementById("fnolAccessCode");
   const fnolUnlockBtn = document.getElementById("fnolUnlockBtn");
   const fnolUnlockStatus = document.getElementById("fnolUnlockStatus");
@@ -41,8 +47,80 @@
   const fnolNotesCounter = document.getElementById("fnolNotesCounter");
   const NOTES_MAX_LENGTH = fnolNotesApi ? fnolNotesApi.NOTES_MAX_LENGTH : 500;
 
+  const initialsDialog = document.getElementById("initialsDialog");
+  const initialsInput = document.getElementById("initialsInput");
+  const initialsConfirmBtn = document.getElementById("initialsConfirmBtn");
+  const initialscancelBtn = document.getElementById("initialscancelBtn");
+
   let fnolRegistryCache = [];
   let activeJobIndex = -1;
+
+  // ── Intake-initials quick dialog ────────────────────────────────────────────
+  function openInitialsDialog(onConfirm) {
+    if (!initialsDialog) {
+      return;
+    }
+    initialsDialog.hidden = false;
+    if (initialsInput) {
+      initialsInput.value = "";
+      initialsInput.focus();
+    }
+
+    function handleConfirm() {
+      const value = initialsInput ? initialsInput.value.trim() : "";
+      if (!value) {
+        if (initialsInput) {
+          initialsInput.focus();
+        }
+        return;
+      }
+      closeInitialsDialog();
+      settingsApi.getSettings(function onGot(stored) {
+        const merged = settingsApi.mergeSettings(stored);
+        merged.fnolIntakeInitials = value;
+        settingsApi.saveSettings(merged, function onSaved() {
+          onConfirm(value);
+        });
+      });
+    }
+
+    function handleCancel() {
+      closeInitialsDialog();
+    }
+
+    function handleKeydown(e) {
+      if (e.key === "Enter") {
+        handleConfirm();
+      } else if (e.key === "Escape") {
+        handleCancel();
+      }
+    }
+
+    if (initialsConfirmBtn) {
+      initialsConfirmBtn.onclick = handleConfirm;
+    }
+    if (initialscancelBtn) {
+      initialscancelBtn.onclick = handleCancel;
+    }
+    if (initialsInput) {
+      initialsInput.onkeydown = handleKeydown;
+    }
+  }
+
+  function closeInitialsDialog() {
+    if (initialsDialog) {
+      initialsDialog.hidden = true;
+    }
+    if (initialsConfirmBtn) {
+      initialsConfirmBtn.onclick = null;
+    }
+    if (initialscancelBtn) {
+      initialscancelBtn.onclick = null;
+    }
+    if (initialsInput) {
+      initialsInput.onkeydown = null;
+    }
+  }
 
   function optionsUrl() {
     return chrome.runtime.getURL("options.html");
@@ -100,6 +178,56 @@
     }
     const handler = settingsApi.getSubmitHandler ? settingsApi.getSubmitHandler(settings) : "generic";
     fnolSubmitBtn.textContent = handler === "teamallenssm" ? "Submit new job" : "Save & copy";
+    if (hintsApi && hintsApi.applySubmitHint) {
+      hintsApi.applySubmitHint(fnolSubmitBtn, settings, settingsApi);
+    }
+  }
+
+  function initFnolButtonHints() {
+    if (!hintsApi || !hintsApi.applyButtonHint) {
+      return;
+    }
+    const apply = hintsApi.applyButtonHint;
+    apply(fnolClearBtn, "fnolClearForm");
+    apply(fnolCopyPlainBtn, "fnolCopyPlain");
+    apply(fnolCopyJsonBtn, "fnolCopyJson");
+    apply(fnolNewEntryBtn, "fnolNewJob");
+    apply(fnolUnlockBtn, "fnolUnlock");
+    apply(openSettingsLink, "fnolOpenSettings");
+    apply(lockedSettingsLink, "fnolOpenSettings");
+    apply(fnolNotesInput, "fnolNotes");
+    settingsApi.getSettings(function onLoaded(settings) {
+      if (hintsApi.applySubmitHint) {
+        hintsApi.applySubmitHint(fnolSubmitBtn, settings, settingsApi);
+      }
+    });
+  }
+
+  function updateLockedMessage(settings) {
+    if (!fnolLockedMessage || !settings) {
+      return;
+    }
+    const email = settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com";
+    if (settingsApi.isTrialExpiredTier && settingsApi.isTrialExpiredTier(settings)) {
+      fnolLockedMessage.textContent =
+        "Your trial has expired. Email " + email + " for full access.";
+    } else {
+      fnolLockedMessage.textContent = "You require an access code for the intake.";
+    }
+  }
+
+  function updateTrialUpsell(settings) {
+    if (!fnolTrialUpsell) {
+      return;
+    }
+    const showTrial = Boolean(settings && settingsApi.isTrialActivated(settings));
+    fnolTrialUpsell.hidden = !showTrial;
+    const email = settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com";
+    if (fnolTrialUpsellEmail) {
+      fnolTrialUpsellEmail.href = "mailto:" + email + "?subject=" +
+        encodeURIComponent("ServPro Helper — Full access / Google Form setup");
+      fnolTrialUpsellEmail.textContent = email;
+    }
   }
 
   function setActivated(activated, options, settings) {
@@ -110,6 +238,10 @@
     if (fnolLockedOverlay) {
       fnolLockedOverlay.classList.toggle("is-active", !activated);
     }
+    if (!activated && settings) {
+      updateLockedMessage(settings);
+    }
+    updateTrialUpsell(settings);
     if (activated) {
       if (fnolAccessCode) {
         fnolAccessCode.value = "";
@@ -124,6 +256,7 @@
     } else {
       settingsApi.getSettings(function onLoadedForLabel(s) {
         updateSubmitButtonLabel(s);
+        updateTrialUpsell(s);
       });
     }
   }
@@ -135,7 +268,7 @@
     }
     chrome.storage.local.get([settingsApi.SETTINGS_KEY], function onLoad(result) {
       const settings = settingsApi.mergeSettings(result && result[settingsApi.SETTINGS_KEY]);
-      callback(settingsApi.isAnyActivated(settings), settings);
+      callback(settingsApi.isFnolAccessible(settings), settings);
     });
   }
 
@@ -158,7 +291,7 @@
         return;
       }
       setUnlockStatus("Invalid code. Use the same code as in Settings.", "error");
-      setActivated(settingsApi.isAnyActivated(settings), null, settings);
+      setActivated(settingsApi.isFnolAccessible(settings), null, settings);
     });
   }
 
@@ -431,6 +564,9 @@
       delBtn.className = "fnol-job-delete";
       delBtn.textContent = "Delete";
       delBtn.setAttribute("aria-label", "Delete entry");
+      if (hintsApi && hintsApi.applyButtonHint) {
+        hintsApi.applyButtonHint(delBtn, "fnolDeleteJob");
+      }
       delBtn.addEventListener("click", function onDelete(e) {
         e.stopPropagation();
         const next = fnolRegistryCache.filter(function keep(_, i) {
@@ -447,7 +583,7 @@
 
       li.addEventListener("click", function onSelect() {
         if (fnolFormPanel && fnolFormPanel.classList.contains("is-locked")) {
-          setStatus("Enter access code above to unlock FNOL.", "error");
+          setStatus("You require an access code for the intake.", "error");
           if (fnolAccessCode) {
             fnolAccessCode.focus();
           }
@@ -606,7 +742,7 @@
         return;
       }
       const settings = settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue);
-      setActivated(settingsApi.isAnyActivated(settings), null, settings);
+      setActivated(settingsApi.isFnolAccessible(settings), null, settings);
     });
   }
 
@@ -658,6 +794,7 @@
   populateFnolLossTypes();
   loadFnolRegistry();
   refreshActivationState();
+  initFnolButtonHints();
 
   function startNewEntry() {
     fnolForm.reset();
@@ -717,8 +854,8 @@
   fnolForm.addEventListener("submit", function onSubmit(e) {
     e.preventDefault();
     settingsApi.getSettings(function onLoaded(settings) {
-      if (!settingsApi.isAnyActivated(settings)) {
-        setStatus("Enter access code above (or in Settings) before submitting.", "error");
+      if (!settingsApi.isFnolAccessible(settings)) {
+        setStatus("You require an access code for the intake.", "error");
         setActivated(false, null, settings);
         if (fnolAccessCode) {
           fnolAccessCode.focus();
@@ -728,8 +865,47 @@
       const payload = buildFnolPayload();
       if (!payload.customerName) {
         setStatus("Customer name is required.", "error");
+        if (fnolCustomer) {
+          fnolCustomer.focus();
+        }
         return;
       }
+      if (!payload.primaryPhone) {
+        setStatus("Phone 1 is required.", "error");
+        if (fnolForm && fnolForm.elements.namedItem("primaryPhone")) {
+          fnolForm.elements.namedItem("primaryPhone").focus();
+        }
+        return;
+      }
+      if (!payload.address1) {
+        setStatus("Address 1 is required.", "error");
+        if (fnolForm && fnolForm.elements.namedItem("address1")) {
+          fnolForm.elements.namedItem("address1").focus();
+        }
+        return;
+      }
+
+      const submitHandler = settingsApi.getSubmitHandler
+        ? settingsApi.getSubmitHandler(settings)
+        : "generic";
+
+      if (
+        googleFormApi &&
+        googleFormApi.needsIntakeInitials &&
+        googleFormApi.needsIntakeInitials(settings, submitHandler)
+      ) {
+        openInitialsDialog(function onInitialsSaved(savedValue) {
+          // Patch in-memory settings so the re-triggered submit sees the new value.
+          settings.fnolIntakeInitials = savedValue;
+          if (fnolForm) {
+            fnolForm.requestSubmit
+              ? fnolForm.requestSubmit(fnolSubmitBtn)
+              : fnolForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+          }
+        });
+        return;
+      }
+
       const notesLen = String(payload.notes || "").length;
       if (notesLen > NOTES_MAX_LENGTH) {
         setStatus(
@@ -740,11 +916,12 @@
         return;
       }
 
-      const submitHandler = settingsApi.getSubmitHandler
-        ? settingsApi.getSubmitHandler(settings)
-        : "generic";
-
       const noteText = String(payload.notes || "").trim();
+
+      const sendGoogleBackup =
+        googleFormApi &&
+        googleFormApi.shouldSubmitBackup &&
+        googleFormApi.shouldSubmitBackup(settings, submitHandler);
 
       // --- TeamAllen-specific submit path ---
       function queuePendingNotesPaste(done) {
@@ -773,7 +950,9 @@
                     ? shouldAutoSave
                       ? "Saved. Jobs list opened — popup will fill and save."
                       : "Saved. Jobs list opened — popup will fill."
-                    : "Saved. Add job page opened — will fill and save.") + notesHint,
+                    : "Saved. Add job page opened — will fill and save.") +
+                    notesHint +
+                    (sendGoogleBackup ? " Google Form backup sent." : ""),
                   "ok"
                 );
               });
@@ -782,7 +961,11 @@
         } else {
           settingsApi.clearPendingAutoSubmit();
           chrome.tabs.create({ url: targetUrl }, function onTab() {
-            setStatus("Saved. Add job page opened — fill manually on that tab.", "ok");
+            setStatus(
+              "Saved. Add job page opened — fill manually on that tab." +
+                (sendGoogleBackup ? " Google Form backup sent." : ""),
+              "ok"
+            );
           });
         }
       }
@@ -804,6 +987,18 @@
       }
 
       setStatus("Saving…");
+
+      if (sendGoogleBackup && googleFormApi.submitGoogleFormBackup) {
+        const activeProfile = settingsApi.getTenantProfile
+          ? settingsApi.getTenantProfile(submitHandler)
+          : null;
+        const formConfig = activeProfile && activeProfile.googleForm
+          ? activeProfile.googleForm
+          : null;
+        if (formConfig) {
+          googleFormApi.submitGoogleFormBackup(payload, settings, formConfig);
+        }
+      }
 
       if (submitHandler === "teamallenssm") {
         setStatus(

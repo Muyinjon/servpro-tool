@@ -29,6 +29,9 @@
   const fnolDefaultPayType = document.getElementById("fnolDefaultPayType");
   const fnolDefaultBusinessUnit = document.getElementById("fnolDefaultBusinessUnit");
   const fnolDefaultJobStatus = document.getElementById("fnolDefaultJobStatus");
+  const fnolIntakeInitials = document.getElementById("fnolIntakeInitials");
+  const googleFormBackupHeading = document.getElementById("googleFormBackupHeading");
+  const googleFormBackupHint = document.getElementById("googleFormBackupHint");
 
   const teamCheckboxIds = [
     "hideListPanel",
@@ -38,7 +41,8 @@
     "fnolPasteNotesAfterSave",
     "showEditCopyButton",
     "fnolClearAfterSubmit",
-    "fnolCopyOnSubmit"
+    "fnolCopyOnSubmit",
+    "fnolGoogleFormBackup"
   ];
 
   // All team-settings selects (besides the two legacy ones)
@@ -57,30 +61,7 @@
     openFnolLink.href = fnolPageUrl();
     openFnolLink.addEventListener("click", function onOpenFnol(e) {
       e.preventDefault();
-      settingsApi.getSettings(function onLoaded(settings) {
-        if (settingsApi.isAnyActivated(settings)) {
-          chrome.tabs.create({ url: fnolPageUrl() });
-        } else {
-          // Show inline upsell and scroll activation card into view
-          if (fnolAccessStatus) {
-            const email = settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com";
-            fnolAccessStatus.textContent =
-              "An access code is required. Email " + email +
-              " to get one.";
-            fnolAccessStatus.className = "sp-status error";
-          }
-          if (activationCard) {
-            activationCard.scrollIntoView({ behavior: "smooth", block: "center" });
-            activationCard.classList.add("sp-highlight");
-            setTimeout(function removeHighlight() {
-              activationCard.classList.remove("sp-highlight");
-            }, 2000);
-          }
-          if (activationCode) {
-            activationCode.focus();
-          }
-        }
-      });
+      chrome.tabs.create({ url: fnolPageUrl() });
     });
   }
 
@@ -141,6 +122,29 @@
     if (tier !== "none" && tier !== "trial-expired" && fnolAccessStatus) {
       setStatus(fnolAccessStatus, "", "");
     }
+
+    // Dynamic Google Form backup heading and hint from tenant registry
+    const activeTier = settings ? settingsApi.getActivationTier(settings) : tier;
+    const profile = settingsApi.getTenantProfile && settingsApi.getTenantProfile(activeTier);
+    if (profile) {
+      if (googleFormBackupHeading) {
+        googleFormBackupHeading.textContent = "Google Form backup \u2014 " + profile.displayName;
+      }
+      if (googleFormBackupHint) {
+        googleFormBackupHint.textContent =
+          "Sends each FNOL submit to the " + profile.displayName +
+          " backup Google Form. Set your initials so the Sheet shows who did intake.";
+      }
+    } else {
+      if (googleFormBackupHeading) {
+        googleFormBackupHeading.textContent = "Google Form backup";
+      }
+      if (googleFormBackupHint) {
+        googleFormBackupHint.textContent =
+          "Sends each FNOL submit to your team\u2019s backup Google Form. " +
+          "Set your initials so the Sheet shows who did intake.";
+      }
+    }
   }
 
   function resolveTierUiState(settings) {
@@ -177,6 +181,9 @@
         partial[id] = el.value || "";
       }
     });
+    if (fnolIntakeInitials) {
+      partial.fnolIntakeInitials = String(fnolIntakeInitials.value || "").trim();
+    }
     return partial;
   }
 
@@ -204,6 +211,9 @@
         el.value = settings[id] || "";
       }
     });
+    if (fnolIntakeInitials && settings) {
+      fnolIntakeInitials.value = settings.fnolIntakeInitials || "";
+    }
     setToolSectionsVisible(resolveTierUiState(settings), settings);
   }
 
@@ -220,8 +230,21 @@
     });
   }
 
+  function applyTrialUpgradeMailto() {
+    const trialUpgradeEmail = document.getElementById("trialUpgradeEmail");
+    if (!trialUpgradeEmail) {
+      return;
+    }
+    const email = settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com";
+    trialUpgradeEmail.href =
+      "mailto:" + email + "?subject=" +
+      encodeURIComponent("ServPro Helper — Full access / Google Form setup");
+    trialUpgradeEmail.textContent = email;
+  }
+
   settingsApi.getSettings(function onLoad(settings) {
     applySettingsToForm(settings);
+    applyTrialUpgradeMailto();
   });
 
   if (chrome.storage && chrome.storage.onChanged) {
@@ -323,5 +346,10 @@
 
   if (teamAllenAddJobUi) {
     teamAllenAddJobUi.addEventListener("change", autoSaveTeamSettings);
+  }
+
+  if (fnolIntakeInitials) {
+    fnolIntakeInitials.addEventListener("change", autoSaveTeamSettings);
+    fnolIntakeInitials.addEventListener("blur", autoSaveTeamSettings);
   }
 })();

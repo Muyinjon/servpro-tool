@@ -1446,6 +1446,13 @@
       }
     }
 
+    const coordinatorHintKeys = {
+      none: "coordinatorNone",
+      recon: "coordinatorRecon",
+      mitigation: "coordinatorMitigation"
+    };
+    const coordHintsApi = window.ServproUploadExtension && window.ServproUploadExtension.buttonHints;
+
     [
       { mode: "none", label: "Non-default" },
       { mode: "recon", label: "Default recon" },
@@ -1454,6 +1461,9 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = def.label;
+      if (coordHintsApi && coordHintsApi.applyButtonHint) {
+        coordHintsApi.applyButtonHint(btn, coordinatorHintKeys[def.mode]);
+      }
       btn.addEventListener("click", function onClick() {
         setMode(def.mode);
         saveJobDefaultMode(def.mode);
@@ -1686,9 +1696,17 @@
       actionRow.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;";
     }
 
+    const hintsApi = window.ServproUploadExtension && window.ServproUploadExtension.buttonHints;
+
     const fillButton = document.createElement("button");
     fillButton.type = "button";
     fillButton.textContent = editJobMode ? "Update from payload" : "Fill from payload";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(
+        fillButton,
+        editJobMode ? "teamAllenUpdateFromPayload" : "teamAllenFillFromPayload"
+      );
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(fillButton, "primary");
     }
@@ -1696,6 +1714,9 @@
     const pasteJsonButton = document.createElement("button");
     pasteJsonButton.type = "button";
     pasteJsonButton.textContent = "Paste JSON";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(pasteJsonButton, "teamAllenPasteJson");
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(pasteJsonButton);
     }
@@ -1703,19 +1724,27 @@
     const copyJobButton = document.createElement("button");
     copyJobButton.type = "button";
     copyJobButton.textContent = "Copy job (JSON)";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(copyJobButton, "teamAllenCopyJobJson");
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(copyJobButton);
     }
     const copyPlainJobButton = document.createElement("button");
     copyPlainJobButton.type = "button";
     copyPlainJobButton.textContent = "Copy plain text";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(copyPlainJobButton, "teamAllenCopyPlain");
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(copyPlainJobButton);
     }
     const pasteNotesButton = document.createElement("button");
     pasteNotesButton.type = "button";
     pasteNotesButton.textContent = "Add notes from FNOL";
-    pasteNotesButton.title = "Add FNOL notes to job Notes (Misc)";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(pasteNotesButton, "teamAllenAddNotesFromFnol");
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(pasteNotesButton);
     }
@@ -1729,6 +1758,9 @@
 
     const historySelect = document.createElement("select");
     historySelect.className = "servpro-helper-select";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(historySelect, "payloadHistory");
+    }
 
     let jobDefaultModeControl = null;
 

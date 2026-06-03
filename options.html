@@ -46,13 +46,20 @@
         <!-- Trial active -->
         <div id="trialActiveBlock" class="sp-hidden" hidden>
           <div id="trialActiveStatus" class="sp-status ok">Trial active.</div>
+          <p class="sp-hint">Trial includes FNOL save and copy and local job history. Full access adds more.</p>
+          <ul class="sp-upsell-list">
+            <li>Form backup (a separate form can be set up for your team to store the data)</li>
+            <li>CRM (Hubspot, Salesforce, etc.) auto-fill, auto-save, and notes</li>
+            <li>WorkCenter import helpers</li>
+          </ul>
+          <p class="sp-hint sp-upsell-cta">
+            Email
+            <a id="trialUpgradeEmail" href="mailto:Ceoturobov@gmail.com" class="sp-link">Ceoturobov@gmail.com</a>
+            to upgrade or to set up your team&rsquo;s Google Form backup.
+          </p>
           <div class="sp-actions">
             <button type="button" id="resetActivationBtn" class="sp-btn secondary sm">Reset access code</button>
           </div>
-          <p class="sp-hint sp-upsell-cta">
-            To unlock the full suite for your company, email
-            <a href="mailto:Ceoturobov@gmail.com" class="sp-link">Ceoturobov@gmail.com</a>.
-          </p>
         </div>
 
         <!-- TeamAllen (full) active -->
@@ -79,7 +86,9 @@
       <!-- FNOL card — always visible; click is gated in options.js -->
       <section id="fnolCard" class="sp-card">
         <h2>First Notice of Loss</h2>
-        <p class="sp-hint">Dedicated form with job history — submit opens the job site for import.</p>
+        <p class="sp-hint">
+          Opens the intake form. Without an access code, the page explains that a code is required to use intake.
+        </p>
         <div class="sp-actions">
           <a id="openFnolLink" class="sp-btn sm" href="#">Open First Notice of Loss</a>
         </div>
@@ -120,11 +129,19 @@
           </div>
           <div class="sp-row">
             <input type="checkbox" id="fnolAutoSave" />
-            <label for="fnolAutoSave">Auto-save after FNOL submit</label>
+            <label
+              for="fnolAutoSave"
+              title="After FNOL submit, automatically save the job on TeamAllen when the form is ready."
+              >Auto-save after FNOL submit</label
+            >
           </div>
           <div class="sp-row">
             <input type="checkbox" id="fnolPasteNotesAfterSave" />
-            <label for="fnolPasteNotesAfterSave">After FNOL save, auto-add notes when Notes section is ready</label>
+            <label
+              for="fnolPasteNotesAfterSave"
+              title="After the job is saved, automatically add FNOL notes when the Notes section is ready."
+              >After FNOL save, auto-add notes when Notes section is ready</label
+            >
           </div>
           <div class="sp-row">
             <input type="checkbox" id="showEditCopyButton" />
@@ -187,17 +204,55 @@
 
           <div class="sp-row">
             <input type="checkbox" id="fnolClearAfterSubmit" />
-            <label for="fnolClearAfterSubmit">Auto-clear form after submit</label>
+            <label
+              for="fnolClearAfterSubmit"
+              title="Clears the FNOL form after a successful submit."
+              >Auto-clear form after submit</label
+            >
           </div>
           <div class="sp-row">
             <input type="checkbox" id="fnolCopyOnSubmit" />
-            <label for="fnolCopyOnSubmit">Copy as plain text on submit</label>
+            <label
+              for="fnolCopyOnSubmit"
+              title="Copies intake as plain text to the clipboard when you submit."
+              >Copy as plain text on submit</label
+            >
+          </div>
+
+          <h3 class="sp-subheading" id="googleFormBackupHeading">Google Form backup</h3>
+          <p class="sp-hint" id="googleFormBackupHint">
+            Sends each FNOL submit to your team's backup Google Form.
+            Set your initials so the Sheet shows who did intake.
+          </p>
+          <div class="sp-field">
+            <label
+              for="fnolIntakeInitials"
+              title="Your initials appear on the Google Form backup row (e.g. IT). Required when backup is on."
+              >Intake initials</label
+            >
+            <input
+              id="fnolIntakeInitials"
+              name="fnolIntakeInitials"
+              type="text"
+              maxlength="8"
+              autocomplete="off"
+              placeholder="IT"
+            />
+          </div>
+          <div class="sp-row">
+            <input type="checkbox" id="fnolGoogleFormBackup" />
+            <label
+              for="fnolGoogleFormBackup"
+              title="Sends each FNOL submit to your team's Google Form backup sheet (TeamAllen access only)."
+              >Send FNOL backup to Google Form on submit</label
+            >
           </div>
         </section>
       </div>
     </div>
 
     <script src="src/lib/settings.js"></script>
+    <script src="src/lib/tenantRegistry.js"></script>
     <script src="src/ui/theme.js"></script>
     <script src="src/ui/options.js"></script>
   </body>

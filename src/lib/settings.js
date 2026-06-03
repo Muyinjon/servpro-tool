@@ -43,7 +43,9 @@
     fnolDefaultBusinessUnit: "",
     fnolDefaultJobStatus: "",
     fnolClearAfterSubmit: false,
-    fnolCopyOnSubmit: false
+    fnolCopyOnSubmit: false,
+    fnolIntakeInitials: "",
+    fnolGoogleFormBackup: true
   };
 
   function getStorage() {
@@ -172,6 +174,49 @@
 
   function isAnyActivated(settings) {
     return isTrialActivated(settings) || isTeamAllenActivated(settings);
+  }
+
+  function isFnolAccessible(settings) {
+    return isTrialActivated(settings) || isTeamAllenActivated(settings);
+  }
+
+  function isFnolLocked(settings) {
+    return !isFnolAccessible(settings);
+  }
+
+  function isTrialExpiredTier(settings) {
+    const merged = mergeSettings(settings);
+    return merged.activationTier === "trial" && isTrialExpired(merged);
+  }
+
+  function canUseGoogleFormBackup(settings) {
+    const tier = getActivationTier(settings);
+    // Delegate the feature-flag check to the tenant registry when available.
+    const registry = root.tenantRegistry;
+    const profile = registry && registry.getTenantProfile
+      ? registry.getTenantProfile(tier)
+      : null;
+    if (profile) {
+      if (!profile.features || !profile.features.googleFormBackup) {
+        return false;
+      }
+    } else {
+      // Registry not loaded yet (e.g. options.html hasn't loaded tenantRegistry.js) —
+      // fall back to the original hard-coded check so the setting is never silently lost.
+      if (tier !== "teamallenssm") {
+        return false;
+      }
+    }
+    const merged = mergeSettings(settings);
+    return merged.fnolGoogleFormBackup !== false;
+  }
+
+  function getTenantProfile(tier) {
+    const registry = root.tenantRegistry;
+    if (registry && registry.getTenantProfile) {
+      return registry.getTenantProfile(tier);
+    }
+    return null;
   }
 
   function getTrialDaysRemaining(settings) {
@@ -414,6 +459,11 @@
     isTrialExpired,
     isTeamAllenActivated,
     isAnyActivated,
+    isFnolAccessible,
+    isFnolLocked,
+    isTrialExpiredTier,
+    canUseGoogleFormBackup,
+    getTenantProfile,
     getTrialDaysRemaining,
     getSubmitHandler,
     setPendingAutoSubmit,

@@ -30,25 +30,26 @@ Chrome extension for ServPro WorkCenter that helps users quickly apply one image
 - `tabs`: used to open TeamAllen add-job from FNOL and the settings page
 - `https://*.servpronet.io/*`: required so the extension can run on ServPro WorkCenter pages
 - `https://teamallenssm.com/*`: required for TeamAllenssm job form autofill
+- `https://docs.google.com/*`: required for TeamAllen FNOL Google Form backup (optional in Settings)
 
 ## Extension icon, settings, and access code
 
 Click the extension icon to open the popup.
 
-- **First Notice of Loss** — dedicated page (`fnol.html`) with a two-panel layout: job history (name + entered timestamp) and the entry form.
+- **First Notice of Loss** — dedicated page (`fnol.html`) always openable; intake requires an access code (*You require an access code for the intake.*). Trial: save & copy only; full **TeamAllenSSM** code unlocks TeamAllen submit and optional Google Form backup.
 - **Settings** — access code, display preferences, add-job mode (list popup vs full page), FNOL auto-save, FNOL post-save notes, and a link to open the FNOL page.
 
 Enter access code **`TeamAllenSSM`** in Settings to unlock import tools and FNOL.
 
 - Coordinator defaults on the import helper panel: **Non-default**, **Default recon**, or **Default mitigation**.
 - **Add job opens as** (default: **List popup**): jobs list + Add Job modal. **Full page** opens `jobs1_add.php` directly.
-- **FNOL page**: sectioned form (basic, address, insurance & adjuster, notes), live **500-character** notes counter (includes adjuster backup text), **Copy as normal text**, **Jobs entered** list with timestamps; submit opens TeamAllen and auto-fills (auto-save optional in Settings). Notes are added **after** the job is saved on TeamAllen (auto-paste when the Notes grid is ready, or **Add notes from FNOL** on the import helper).
+- **FNOL page**: sectioned form (basic, address, insurance & adjuster, notes); **Customer**, **Phone 1**, and **Address 1** are required; live **500-character** notes counter; **Jobs entered** list with timestamps. **Trial**: save & copy, no Google backup (upgrade via email in Settings). **TeamAllen**: submit opens TeamAllen and auto-fills; optional **Google Form backup** (intake initials in Settings, e.g. `IT`). See [`docs/google-form-fnol-backup.md`](docs/google-form-fnol-backup.md). Notes are added **after** the job is saved on TeamAllen when configured.
 - On **edit** pages, use **Copy current job (JSON)** or **Copy as normal text**; address is read from the visible address grid (opens inline edit if needed).
 - JSON panels also include **Copy as normal text** beside **Copy JSON**.
 
 ## Privacy
 
-This extension does not collect, transmit, sell, or share personal data. It uses local browser storage only to remember your last selected image type and scraped WorkCenter payloads (including the last five scrape history entries). Data stays on your device.
+By default, data stays in local Chrome storage (image type preference, WorkCenter payloads, FNOL job history). If you use **TeamAllen** access and leave **Send FNOL backup to Google Form** enabled in Settings, each FNOL submit also POSTs job fields to your team’s Google Form (linked Google Sheet). That backup is optional and limited to the TeamAllen tier. See [`docs/google-form-fnol-backup.md`](docs/google-form-fnol-backup.md).
 
 ## WorkCenter scrape + TeamAllenssm import
 

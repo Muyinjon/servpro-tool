@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ServPro Helper",
   "description": "Workflow tools for SERVPRO franchises — job import, FNOL, and WorkCenter integration.",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "action": {
     "default_popup": "popup.html",
     "default_title": "ServPro Helper",
@@ -28,7 +28,8 @@
   ],
   "host_permissions": [
     "https://*.servpronet.io/*",
-    "https://teamallenssm.com/*"
+    "https://teamallenssm.com/*",
+    "https://docs.google.com/*"
   ],
   "web_accessible_resources": [
     {
@@ -43,10 +44,12 @@
       ],
       "js": [
         "src/lib/settings.js",
+        "src/lib/tenantRegistry.js",
         "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
         "src/lib/kendoHelpers.js",
         "src/lib/payloadPlainText.js",
+        "src/lib/buttonHints.js",
         "src/ui/theme.js",
         "src/ui/helperPanel.js",
         "src/ui/panel.js",
@@ -76,10 +79,12 @@
       "all_frames": true,
       "js": [
         "src/lib/settings.js",
+        "src/lib/tenantRegistry.js",
         "src/lib/workcenterFields.js",
         "src/lib/selectors.js",
         "src/lib/payloadPlainText.js",
         "src/lib/fnolNotes.js",
+        "src/lib/buttonHints.js",
         "src/ui/theme.js",
         "src/ui/helperPanel.js",
         "src/ui/importPayloadPanel.js",

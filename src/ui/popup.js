@@ -41,19 +41,10 @@
 
   if (openFnol) {
     openFnol.addEventListener("click", function onOpenFnol() {
-      settingsApi.getSettings(function onLoaded(settings) {
-        if (!settingsApi.isAnyActivated(settings)) {
-          const email = settingsApi.CONTACT_EMAIL || "Ceoturobov@gmail.com";
-          popupStatus.textContent = "Access code required. Email " + email + " for a code.";
-          popupStatus.className = "popup-status error";
-          if (popupUpsell) {
-            popupUpsell.classList.remove("hidden");
-          }
-          return;
-        }
-        chrome.tabs.create({ url: fnolPageUrl() });
-        window.close();
-      });
+      popupStatus.textContent = "";
+      popupStatus.className = "popup-status";
+      chrome.tabs.create({ url: fnolPageUrl() });
+      window.close();
     });
   }
 
@@ -71,6 +62,24 @@
       window.close();
     });
   });
+
+  const hintsApi = window.ServproUploadExtension && window.ServproUploadExtension.buttonHints;
+
+  function applyPopupHints(settings) {
+    if (!hintsApi || !hintsApi.applyButtonHint) {
+      return;
+    }
+    const apply = hintsApi.applyButtonHint;
+    apply(openFnol, "popupOpenFnol");
+    apply(openSettings, "popupOpenSettings");
+    if (openAddJob && settingsApi.isTeamAllenActivated(settings)) {
+      const openVia = settingsApi.resolveTeamAllenOpenVia(settings);
+      apply(
+        openAddJob,
+        openVia === "modal" ? "popupOpenJobsList" : "popupOpenAddJobPage"
+      );
+    }
+  }
 
   function applyPopupState(settings) {
     if (popupDarkMode) {
@@ -115,6 +124,8 @@
     } else {
       openAddJob.classList.add("hidden");
     }
+
+    applyPopupHints(settings);
 
     // Upsell footer — shown when no active tier
     if (popupUpsell) {

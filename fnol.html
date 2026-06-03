@@ -35,8 +35,8 @@
           <div id="fnolLockedOverlay" class="fnol-locked-overlay">
             <div class="fnol-unlock-card">
               <h2>Access code required</h2>
-              <p class="fnol-unlock-hint">
-                Enter the same access code you use in Settings to unlock First Notice of Loss.
+              <p id="fnolLockedMessage" class="fnol-unlock-hint">
+                You require an access code for the intake. please contact Ceoturobov@gmail.com to get an access code for your company.
               </p>
               <div class="field">
                 <label for="fnolAccessCode">Access code</label>
@@ -55,13 +55,28 @@
             </div>
           </div>
 
+          <div id="fnolTrialUpsell" class="fnol-trial-upsell" hidden>
+            <p class="fnol-trial-upsell-title">Trial — limited features</p>
+            <p>
+              Upgrade to the full version for Google Form backup, CRM auto-fill and auto-save, and import helpers.
+              Email us to set up your team&rsquo;s Google Form backup.
+            </p>
+            <p>
+              <a id="fnolTrialUpsellEmail" class="fnol-trial-upsell-link" href="mailto:Ceoturobov@gmail.com"
+                >Ceoturobov@gmail.com</a
+              >
+            </p>
+          </div>
+
           <form id="fnolForm">
             <div class="fnol-form-grid">
               <fieldset class="fnol-section fnol-section-basic">
                 <legend>Basic information</legend>
                 <div class="fnol-grid">
                   <div class="field field-span2">
-                    <label for="fnolCustomer">Customer *</label>
+                    <label for="fnolCustomer"
+                      >Customer <span class="fnol-required-mark" aria-hidden="true">*</span></label
+                    >
                     <input id="fnolCustomer" name="customerName" required />
                   </div>
                   <div class="field field-span2">
@@ -69,8 +84,10 @@
                     <input id="fnolBusiness" name="businessName" />
                   </div>
                   <div class="field">
-                    <label for="fnolPhone1">Phone 1</label>
-                    <input id="fnolPhone1" name="primaryPhone" />
+                    <label for="fnolPhone1"
+                      >Phone 1 <span class="fnol-required-mark" aria-hidden="true">*</span></label
+                    >
+                    <input id="fnolPhone1" name="primaryPhone" required />
                   </div>
                   <div class="field">
                     <label for="fnolPhone2">Phone 2</label>
@@ -153,8 +170,10 @@
                 <legend>Address</legend>
                 <div class="fnol-grid fnol-grid-address">
                   <div class="field field-span-all">
-                    <label for="fnolAddress1">Address 1</label>
-                    <input id="fnolAddress1" name="address1" />
+                    <label for="fnolAddress1"
+                      >Address 1 <span class="fnol-required-mark" aria-hidden="true">*</span></label
+                    >
+                    <input id="fnolAddress1" name="address1" required />
                   </div>
                   <div class="field field-span-all">
                     <label for="fnolAddress2">Address 2</label>
@@ -210,7 +229,6 @@
                     name="notesUser"
                     rows="2"
                     maxlength="500"
-                    title="Adjuster details are copied into notes on submit as a backup."
                   ></textarea>
                   <p id="fnolNotesCounter" class="fnol-notes-counter" aria-live="polite">0 / 500</p>
                   <p class="hint">Adjuster details are appended to notes on submit (500 character limit on the job site).</p>
@@ -232,11 +250,30 @@
       </div>
     </div>
 
+    <!-- Intake initials quick-entry dialog -->
+    <div id="initialsDialog" class="fnol-dialog-backdrop" hidden aria-modal="true" role="dialog" aria-labelledby="initialsDialogTitle">
+      <div class="fnol-dialog">
+        <h2 class="fnol-dialog-title" id="initialsDialogTitle">Enter your initials</h2>
+        <p class="fnol-dialog-hint">Your initials are saved and will appear on the Google Form backup row.</p>
+        <div class="fnol-dialog-field">
+          <label for="initialsInput">Initials</label>
+          <input id="initialsInput" type="text" maxlength="8" autocomplete="off" placeholder="e.g. IT" />
+        </div>
+        <div class="fnol-dialog-actions">
+          <button type="button" id="initialsConfirmBtn" class="btn">Save &amp; submit</button>
+          <button type="button" id="initialscancelBtn" class="btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <script src="src/lib/settings.js"></script>
+    <script src="src/lib/tenantRegistry.js"></script>
     <script src="src/ui/theme.js"></script>
     <script src="src/lib/selectors.js"></script>
     <script src="src/lib/fnolNotes.js"></script>
     <script src="src/lib/payloadPlainText.js"></script>
+    <script src="src/lib/googleFormTeamAllen.js"></script>
+    <script src="src/lib/buttonHints.js"></script>
     <script src="src/ui/fnol.js"></script>
   </body>
 </html>

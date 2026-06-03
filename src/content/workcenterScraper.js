@@ -601,6 +601,10 @@
     const scrapeButton = document.createElement("button");
     scrapeButton.type = "button";
     scrapeButton.textContent = "Scrape";
+    const hintsApi = window.ServproUploadExtension && window.ServproUploadExtension.buttonHints;
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(scrapeButton, "workcenterScrape");
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(scrapeButton, "primary");
     }
@@ -608,6 +612,9 @@
     const exportButton = document.createElement("button");
     exportButton.type = "button";
     exportButton.textContent = "Export JSON";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(exportButton, "workcenterExportJson");
+    }
     if (helperPanelApi) {
       helperPanelApi.styleButton(exportButton);
     }
@@ -617,6 +624,9 @@
     autofillButton.textContent = "Open job import";
     autofillButton.className = "servpro-btn";
     autofillButton.style.display = "none";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(autofillButton, "workcenterOpenImport");
+    }
 
     function updateEditor(payload, expand) {
       if (jsonEditor) {
