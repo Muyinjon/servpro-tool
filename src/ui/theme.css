@@ -1,5 +1,6 @@
 :root,
-[data-theme="light"] {
+[data-servpro-theme="light"],
+.servpro-helper-panel[data-servpro-theme="light"] {
   color-scheme: light;
   --sp-bg: #f8fafb;
   --sp-surface: #ffffff;
@@ -37,7 +38,8 @@
   --sp-action-bar-bg: linear-gradient(to top, #ffffff 88%, rgba(255, 255, 255, 0.96));
 }
 
-[data-theme="dark"] {
+[data-servpro-theme="dark"],
+.servpro-helper-panel[data-servpro-theme="dark"] {
   color-scheme: dark;
   --sp-bg: #0f1419;
   --sp-surface: #1a2332;
@@ -71,12 +73,13 @@
   --sp-action-bar-bg: linear-gradient(to top, #1a2332 90%, rgba(26, 35, 50, 0.92));
 }
 
-[data-theme="dark"] select option {
+[data-servpro-theme="dark"] select option,
+.servpro-helper-panel[data-servpro-theme="dark"] select option {
   background: #1a2332;
   color: #e2e8f0;
 }
 
-body {
+body[data-servpro-theme] {
   background: var(--sp-bg);
   color: var(--sp-text);
 }

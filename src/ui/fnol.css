@@ -696,10 +696,10 @@ body {
 }
 
 /* WebKit autofill: avoid bright yellow boxes in dark mode */
-[data-theme="dark"] .field input:-webkit-autofill,
-[data-theme="dark"] .field select:-webkit-autofill,
-[data-theme="dark"] .field textarea:-webkit-autofill,
-[data-theme="dark"] .fnol-unlock-card .field input:-webkit-autofill {
+[data-servpro-theme="dark"] .field input:-webkit-autofill,
+[data-servpro-theme="dark"] .field select:-webkit-autofill,
+[data-servpro-theme="dark"] .field textarea:-webkit-autofill,
+[data-servpro-theme="dark"] .fnol-unlock-card .field input:-webkit-autofill {
   -webkit-text-fill-color: var(--sp-text);
   -webkit-box-shadow: 0 0 0 1000px var(--sp-input-bg) inset;
   transition: background-color 99999s ease-out;

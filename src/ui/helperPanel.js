@@ -8,10 +8,10 @@
 
   /* Shown immediately if full theme.css is still loading or blocked */
   const CRITICAL_HELPER_CSS = [
-    ":root,[data-theme=light]{--sp-surface:#fff;--sp-surface-muted:#f1f5f9;--sp-border:#cbd5e1;",
+    ".servpro-helper-panel[data-servpro-theme=light]{--sp-surface:#fff;--sp-surface-muted:#f1f5f9;--sp-border:#cbd5e1;",
     "--sp-text:#0f172a;--sp-text-muted:#64748b;--sp-accent:#1b4332;--sp-accent-hover:#2d6a4f;",
     "--sp-accent-soft:#d8f3dc;--sp-shadow:0 2px 10px rgba(15,23,42,.12);--sp-radius:6px;--sp-radius-lg:8px;--sp-font:system-ui,sans-serif}",
-    "[data-theme=dark]{--sp-surface:#1a2332;--sp-surface-muted:#141c28;--sp-border:#334155;",
+    ".servpro-helper-panel[data-servpro-theme=dark]{--sp-surface:#1a2332;--sp-surface-muted:#141c28;--sp-border:#334155;",
     "--sp-text:#e2e8f0;--sp-text-muted:#94a3b8;--sp-accent:#40916c;--sp-accent-hover:#52b788;",
     "--sp-accent-soft:#1b4332;--sp-shadow:0 2px 12px rgba(0,0,0,.45)}",
     ".servpro-helper-panel{position:fixed!important;right:12px!important;bottom:12px!important;",

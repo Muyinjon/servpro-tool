@@ -362,6 +362,88 @@
     return normalizeText((payload && (payload.notes || payload.notesUser)) || "");
   }
 
+  function scoreNotesInlineAddButton(button) {
+    if (!button) {
+      return -1;
+    }
+    const id = normalizeKey(button.id || "");
+    const title = normalizeKey(button.getAttribute("title") || "");
+    const text = normalizeKey(button.textContent || "");
+    const href = normalizeKey(button.getAttribute("href") || "");
+    const onclick = normalizeKey(button.getAttribute("onclick") || "");
+    const container = button.closest("[data-page],[data-table],[id],[class]");
+    const containerText = normalizeKey(
+      (container &&
+        ((container.getAttribute && container.getAttribute("data-page")) ||
+          (container.getAttribute && container.getAttribute("data-table")) ||
+          container.id ||
+          container.className)) ||
+        ""
+    );
+
+    let score = 0;
+    if (id.indexOf("jobnotes") >= 0 || id.indexOf("sp_jobnotes") >= 0 || id.indexOf("_notes_") >= 0) {
+      score += 6;
+    }
+    if (title.indexOf("note") >= 0 || text.indexOf("note") >= 0) {
+      score += 4;
+    }
+    if (href.indexOf("jobnotes") >= 0 || onclick.indexOf("jobnotes") >= 0 || onclick.indexOf("_notes_") >= 0) {
+      score += 5;
+    }
+    if (containerText.indexOf("jobnotes") >= 0 || containerText.indexOf("sp_jobnotes") >= 0 || containerText.indexOf("_notes") >= 0) {
+      score += 5;
+    }
+    return score;
+  }
+
+  function findNotesAddButton() {
+    const candidates = Array.from(document.querySelectorAll('a[id^="inlineAdd"]'));
+    if (!candidates.length) {
+      return null;
+    }
+    let best = null;
+    let bestScore = -1;
+    candidates.forEach(function each(button) {
+      const score = scoreNotesInlineAddButton(button);
+      if (score > bestScore) {
+        best = button;
+        bestScore = score;
+      }
+    });
+    return bestScore > 0 ? best : null;
+  }
+
+  function getNotesTextarea() {
+    return document.querySelector('textarea[id^="value_Notes_"]');
+  }
+
+  function getNotesControls() {
+    const textarea = getNotesTextarea();
+    const suffix = textarea && textarea.id ? textarea.id.replace(/^value_Notes_/, "") : "";
+    if (!suffix) {
+      return {
+        addButton: findNotesAddButton(),
+        textarea: null,
+        suffix: "",
+        typeSelect: null,
+        saveLink: null
+      };
+    }
+    return {
+      addButton: findNotesAddButton(),
+      textarea: textarea,
+      suffix: suffix,
+      typeSelect: document.getElementById("value_fkNoteTypeId_" + suffix),
+      saveLink: document.getElementById("saveLink" + suffix)
+    };
+  }
+
+  function isNotesUiReady() {
+    const controls = getNotesControls();
+    return Boolean(controls.addButton || controls.textarea);
+  }
+
   function pasteNotesFromPayload(payload, callback) {
     let noteText = noteTextFromPayload(payload);
     if (!noteText) {
@@ -377,43 +459,40 @@
       }
     }
 
-    const addNotesBtn = document.querySelector('a[id^="inlineAdd"]');
-    if (!addNotesBtn || typeof addNotesBtn.click !== "function") {
-      callback(false, "Add Notes button not found — scroll to the Notes section and try again.");
-      return;
+    const initialControls = getNotesControls();
+    if (!initialControls.textarea) {
+      if (!initialControls.addButton || typeof initialControls.addButton.click !== "function") {
+        callback(false, "Add Notes button not found — scroll to the Notes section and try again.");
+        return;
+      }
+      initialControls.addButton.click();
     }
-    addNotesBtn.click();
 
     let waited = 0;
-    const maxWait = 2000;
+    const maxWait = 8000;
     function waitForNotesTextarea() {
-      const textarea = document.querySelector('textarea[id^="value_Notes_"]');
-      if (textarea) {
-        textarea.focus();
-        textarea.value = noteText;
+      const controls = getNotesControls();
+      if (controls.textarea) {
+        controls.textarea.focus();
+        controls.textarea.value = noteText;
         try {
-          textarea.dispatchEvent(new Event("input", { bubbles: true }));
-          textarea.dispatchEvent(new Event("change", { bubbles: true }));
+          controls.textarea.dispatchEvent(new Event("input", { bubbles: true }));
+          controls.textarea.dispatchEvent(new Event("change", { bubbles: true }));
         } catch (e) {
           /* ignore */
         }
 
-        const suffix = textarea.id.replace(/^value_Notes_/, "");
-        const typeSelect = document.getElementById("value_fkNoteTypeId_" + suffix) ||
-          document.querySelector('select[id^="value_fkNoteTypeId_"]');
-        if (typeSelect) {
+        if (controls.typeSelect) {
           try {
-            setSelectByValue(typeSelect, "1");
+            setSelectByValue(controls.typeSelect, "1");
           } catch (e) {
             /* best-effort */
           }
         }
 
-        const saveLink = document.getElementById("saveLink" + suffix) ||
-          document.querySelector('a[id^="saveLink"]');
-        if (saveLink && typeof saveLink.click === "function") {
+        if (controls.saveLink && typeof controls.saveLink.click === "function") {
           global.setTimeout(function clickSave() {
-            saveLink.click();
+            controls.saveLink.click();
             callback(true, "Note pasted and saved." + trimSuffix);
           }, 120);
         } else {
@@ -445,8 +524,7 @@
       const noteText = normalizeText(pending.text);
       let waited = 0;
       function pollForNotesUi() {
-        const addNotesBtn = document.querySelector('a[id^="inlineAdd"]');
-        if (addNotesBtn) {
+        if (isNotesUiReady()) {
           if (setStatus) {
             setStatus("Adding notes from FNOL…");
           }
@@ -481,7 +559,7 @@
       if (!pending || !normalizeText(pending.text)) {
         return;
       }
-      if (!document.querySelector('a[id^="inlineAdd"]')) {
+      if (!isNotesUiReady()) {
         return;
       }
       tryPendingNotesPaste(setStatus);

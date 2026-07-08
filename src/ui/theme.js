@@ -7,7 +7,10 @@
     const theme = merged.darkMode ? "dark" : "light";
     const doc = global.document;
     if (doc && doc.documentElement) {
-      doc.documentElement.dataset.theme = theme;
+      doc.documentElement.dataset.servproTheme = theme;
+    }
+    if (doc && doc.body) {
+      doc.body.dataset.servproTheme = theme;
     }
     return theme;
   }
