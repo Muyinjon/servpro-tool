@@ -18,7 +18,7 @@
     "z-index:2147483647!important;width:min(340px,calc(100vw - 24px))!important;max-height:88vh!important;",
     "overflow:auto!important;display:flex!important;flex-direction:column!important;gap:6px!important;",
     "padding:8px 10px!important;background:var(--sp-surface)!important;border:1px solid var(--sp-border)!important;",
-    "border-radius:8px!important;box-shadow:var(--sp-shadow)!important;font:12px/1.35 var(--sp-font,sans-serif)!important;",
+    "border-radius:8px!important;box-shadow:var(--sp-shadow)!important;font-size:12px!important;line-height:1.35!important;font-family:var(--sp-font,sans-serif)!important;",
     "color:var(--sp-text)!important}",
     ".servpro-helper-header{display:flex!important;align-items:center!important;justify-content:space-between!important}",
     ".servpro-helper-title{font-weight:700!important;font-size:12px!important}",
