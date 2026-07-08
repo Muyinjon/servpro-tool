@@ -362,6 +362,59 @@
     return normalizeText((payload && (payload.notes || payload.notesUser)) || "");
   }
 
+  function buildPendingNotesContextFromPayload(payload) {
+    const source = payload || {};
+    return {
+      fnolId: normalizeText(source.fnolId),
+      claimNumber: normalizeKey(String(source.claimNumber || "").replace(/\s+/g, "")),
+      customerName: normalizeKey(source.customerName || source.businessName || ""),
+      address1: normalizeKey(source.address1 || ""),
+      sourceUrl: normalizeText(source.sourceUrl),
+      scrapedAt: normalizeText(source.scrapedAt)
+    };
+  }
+
+  function isPendingNotesExpired(pending) {
+    if (!pending || !pending.at) {
+      return true;
+    }
+    const at = Date.parse(pending.at);
+    if (Number.isNaN(at)) {
+      return true;
+    }
+    return Date.now() - at > 2 * 60 * 60 * 1000;
+  }
+
+  function isPendingNotesMatchingPayload(pending, payload) {
+    if (!pending || !normalizeText(pending.text)) {
+      return false;
+    }
+    const pendingContext = pending.context || null;
+    if (!pendingContext) {
+      return true;
+    }
+    const target = buildPendingNotesContextFromPayload(payload || {});
+    if (normalizeText(pendingContext.fnolId) && normalizeText(target.fnolId)) {
+      return normalizeText(pendingContext.fnolId) === normalizeText(target.fnolId);
+    }
+    const pendingClaim = normalizeKey(String(pendingContext.claimNumber || "").replace(/\s+/g, ""));
+    const targetClaim = normalizeKey(String(target.claimNumber || "").replace(/\s+/g, ""));
+    const pendingCustomer = normalizeKey(pendingContext.customerName || "");
+    const targetCustomer = normalizeKey(target.customerName || "");
+    const pendingAddress = normalizeKey(pendingContext.address1 || "");
+    const targetAddress = normalizeKey(target.address1 || "");
+    if (pendingClaim && targetClaim && pendingClaim === targetClaim) {
+      return true;
+    }
+    if (pendingCustomer && targetCustomer && pendingAddress && targetAddress) {
+      return pendingCustomer === targetCustomer && pendingAddress === targetAddress;
+    }
+    if (pendingClaim || pendingCustomer || pendingAddress) {
+      return false;
+    }
+    return true;
+  }
+
   function scoreNotesInlineAddButton(button) {
     if (!button) {
       return -1;
@@ -513,12 +566,23 @@
   const NOTES_UI_POLL_MS = 500;
   const NOTES_UI_POLL_MAX_MS = 30000;
 
-  function tryPendingNotesPaste(setStatus) {
+  function tryPendingNotesPaste(setStatus, payloadForMatch) {
     if (!settingsApi || cachedSettings.fnolPasteNotesAfterSave === false) {
       return;
     }
     settingsApi.getPendingNotesPaste(function onPending(pending) {
       if (!pending || !normalizeText(pending.text)) {
+        return;
+      }
+      if (isPendingNotesExpired(pending)) {
+        settingsApi.clearPendingNotesPaste();
+        return;
+      }
+      if (!isPendingNotesMatchingPayload(pending, payloadForMatch)) {
+        settingsApi.clearPendingNotesPaste();
+        if (setStatus) {
+          setStatus("Skipped stale FNOL notes from a different job.");
+        }
         return;
       }
       const noteText = normalizeText(pending.text);
@@ -540,6 +604,7 @@
         }
         waited += NOTES_UI_POLL_MS;
         if (waited >= NOTES_UI_POLL_MAX_MS) {
+          settingsApi.clearPendingNotesPaste();
           if (setStatus) {
             setStatus("Job saved. Click Add notes from FNOL when Notes section is visible.");
           }
@@ -562,7 +627,7 @@
       if (!isNotesUiReady()) {
         return;
       }
-      tryPendingNotesPaste(setStatus);
+      tryPendingNotesPaste(setStatus, null);
     });
   }
 
@@ -683,7 +748,7 @@
               setStatus(msg);
             }
             if (shouldSave && saved) {
-              tryPendingNotesPaste(setStatus);
+              tryPendingNotesPaste(setStatus, payload);
             } else {
               settingsApi.getPendingNotesPaste(function onNotesPending(pending) {
                 if (pending && normalizeText(pending.text) && setStatus) {
@@ -1826,10 +1891,6 @@
     if (helperPanelApi) {
       helperPanelApi.styleButton(pasteNotesButton);
     }
-    const pasteNotesRow = document.createElement("div");
-    pasteNotesRow.className = "servpro-helper-row";
-    pasteNotesRow.style.display = "none";
-
     const historyLabel = document.createElement("div");
     historyLabel.className = "servpro-helper-label";
     historyLabel.textContent = "History";
@@ -1871,24 +1932,6 @@
       });
 
       historySelect.value = selectedHistoryIndex >= 0 ? String(selectedHistoryIndex) : "-1";
-      refreshAddNotesFromFnolVisibility(latest, history);
-    }
-
-    function refreshAddNotesFromFnolVisibility(latest, history) {
-      if (!settingsApi || !pasteNotesRow) {
-        return;
-      }
-      settingsApi.getPendingNotesPaste(function onPending(pending) {
-        let payload = latest || null;
-        if (selectedHistoryIndex >= 0 && history && history[selectedHistoryIndex]) {
-          payload = history[selectedHistoryIndex];
-        } else if (!payload && history && history.length) {
-          payload = history[0];
-        }
-        const hasPending = pending && normalizeText(pending.text);
-        const hasPayloadNotes = noteTextFromPayload(payload);
-        pasteNotesRow.style.display = hasPending || hasPayloadNotes ? "flex" : "none";
-      });
     }
 
     function loadPayloadForEditor(latest, history) {
@@ -2003,22 +2046,28 @@
         setStatus("Settings unavailable.");
         return;
       }
-      settingsApi.getPendingNotesPaste(function onPending(pending) {
-        if (pending && normalizeText(pending.text)) {
-          runPaste({ notes: pending.text });
-          return;
+      loadPayloads(function onLoaded(latest, history) {
+        let payload = null;
+        const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+        if (editorParsed.ok && normalizeText(jsonEditor && jsonEditor.getText())) {
+          payload = editorParsed.payload;
+        } else if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
+          payload = history[selectedHistoryIndex];
+        } else if (latest) {
+          payload = latest;
+        } else if (history.length) {
+          payload = history[0];
         }
-        loadPayloads(function onLoaded(latest, history) {
-          let payload = null;
-          const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
-          if (editorParsed.ok && normalizeText(jsonEditor && jsonEditor.getText())) {
-            payload = editorParsed.payload;
-          } else if (selectedHistoryIndex >= 0 && history[selectedHistoryIndex]) {
-            payload = history[selectedHistoryIndex];
-          } else if (latest) {
-            payload = latest;
-          } else if (history.length) {
-            payload = history[0];
+        settingsApi.getPendingNotesPaste(function onPending(pending) {
+          if (pending && normalizeText(pending.text)) {
+            if (isPendingNotesExpired(pending)) {
+              settingsApi.clearPendingNotesPaste();
+            } else if (isPendingNotesMatchingPayload(pending, payload)) {
+              runPaste({ notes: pending.text });
+              return;
+            } else {
+              settingsApi.clearPendingNotesPaste();
+            }
           }
           runPaste(payload);
         });
@@ -2093,10 +2142,9 @@
       actionRow.appendChild(copyJobButton);
     }
     actionRow.appendChild(pasteJsonButton);
+    actionRow.appendChild(pasteNotesButton);
 
     const body = shell ? shell.body : panel;
-    pasteNotesRow.appendChild(pasteNotesButton);
-    body.appendChild(pasteNotesRow);
     body.appendChild(historyLabel);
     body.appendChild(historySelect);
 

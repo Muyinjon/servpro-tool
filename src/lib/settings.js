@@ -394,11 +394,17 @@
     setPendingAutoSubmit(false, callback);
   }
 
-  function setPendingNotesPaste(noteText, callback) {
+  function setPendingNotesPaste(noteText, metaOrCallback, callback) {
     const storage = getStorage();
+    let meta = metaOrCallback;
+    if (typeof metaOrCallback === "function") {
+      callback = metaOrCallback;
+      meta = null;
+    }
     if (typeof noteText === "function") {
       callback = noteText;
       noteText = "";
+      meta = null;
     }
     if (!storage) {
       if (typeof callback === "function") {
@@ -410,7 +416,8 @@
     const value = text
       ? {
           at: new Date().toISOString(),
-          text: text
+          text: text,
+          context: meta && typeof meta === "object" ? Object.assign({}, meta) : null
         }
       : null;
     storage.set({ [PENDING_NOTES_PASTE_KEY]: value }, function onSaved() {

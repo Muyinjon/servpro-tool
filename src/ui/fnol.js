@@ -476,6 +476,18 @@
     return payload;
   }
 
+  function buildPendingNotesContext(payload) {
+    const source = payload || {};
+    return {
+      fnolId: String(source.fnolId || "").trim(),
+      claimNumber: String(source.claimNumber || "").replace(/\s+/g, "").toLowerCase(),
+      customerName: String(source.customerName || "").replace(/\s+/g, " ").trim().toLowerCase(),
+      address1: String(source.address1 || "").replace(/\s+/g, " ").trim().toLowerCase(),
+      sourceUrl: String(source.sourceUrl || "").trim(),
+      scrapedAt: String(source.scrapedAt || "")
+    };
+  }
+
   function formatEnteredTime(savedAt) {
     if (!savedAt) {
       return "";
@@ -926,7 +938,7 @@
       // --- TeamAllen-specific submit path ---
       function queuePendingNotesPaste(done) {
         if (settings.fnolPasteNotesAfterSave !== false && noteText) {
-          settingsApi.setPendingNotesPaste(noteText, done);
+          settingsApi.setPendingNotesPaste(noteText, buildPendingNotesContext(payload), done);
           return;
         }
         settingsApi.clearPendingNotesPaste(done);

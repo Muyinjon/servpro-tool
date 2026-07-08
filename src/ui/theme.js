@@ -2,14 +2,19 @@
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
   const settingsApi = root.settings;
 
+  function shouldApplyDocumentTheme(doc) {
+    if (!doc || !doc.body) {
+      return false;
+    }
+    return Boolean(doc.querySelector(".popup-wrap, .wrap, .fnol-page"));
+  }
+
   function applyTheme(settings) {
     const merged = settingsApi ? settingsApi.mergeSettings(settings) : settings || {};
     const theme = merged.darkMode ? "dark" : "light";
     const doc = global.document;
-    if (doc && doc.documentElement) {
+    if (doc && doc.documentElement && shouldApplyDocumentTheme(doc)) {
       doc.documentElement.dataset.servproTheme = theme;
-    }
-    if (doc && doc.body) {
       doc.body.dataset.servproTheme = theme;
     }
     return theme;
