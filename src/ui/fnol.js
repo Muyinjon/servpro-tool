@@ -38,6 +38,7 @@
   const fnolNewEntryBtn = document.getElementById("fnolNewEntryBtn");
   const fnolClearBtn = document.getElementById("fnolClearBtn");
   const fnolCopyPlainBtn = document.getElementById("fnolCopyPlainBtn");
+  const fnolCopyCalendarTitleBtn = document.getElementById("fnolCopyCalendarTitleBtn");
   const fnolCopyJsonBtn = document.getElementById("fnolCopyJsonBtn");
   const fnolLossType = document.getElementById("fnolLossType");
   const fnolJobList = document.getElementById("fnolJobList");
@@ -177,7 +178,7 @@
       return;
     }
     const handler = settingsApi.getSubmitHandler ? settingsApi.getSubmitHandler(settings) : "generic";
-    fnolSubmitBtn.textContent = handler === "teamallenssm" ? "Submit new job" : "Save & copy";
+    fnolSubmitBtn.textContent = handler === "teamallenssm" ? "Submit" : "Save";
     if (hintsApi && hintsApi.applySubmitHint) {
       hintsApi.applySubmitHint(fnolSubmitBtn, settings, settingsApi);
     }
@@ -704,6 +705,46 @@
     done(false, "Clipboard not available.");
   }
 
+  function formatPhoneForCalendar(value) {
+    const raw = String(value || "").trim();
+    const digits = raw.replace(/\D+/g, "");
+    if (digits.length === 10) {
+      return "+1 (" + digits.slice(0, 3) + ") " + digits.slice(3, 6) + "-" + digits.slice(6);
+    }
+    if (digits.length === 11 && digits.charAt(0) === "1") {
+      return "+1 (" + digits.slice(1, 4) + ") " + digits.slice(4, 7) + "-" + digits.slice(7);
+    }
+    return raw;
+  }
+
+  function buildCalendarTitleFromPayload(payload, settings) {
+    const source = payload || {};
+    const lossType = String(source.lossType || "").trim();
+    const addressParts = [
+      String(source.address1 || "").trim(),
+      String(source.address2 || "").trim(),
+      String(source.city || "").trim(),
+      String(source.state || "").trim(),
+      String(source.zip || "").trim()
+    ].filter(Boolean);
+    const fullAddress = addressParts.join(", ").replace(/\s+,/g, ",");
+
+    const parts = [
+      lossType ? lossType + " - " + fullAddress : fullAddress,
+      String(source.insuranceCarrier || "").trim(),
+      String(source.claimNumber || "").trim(),
+      String(source.customerName || source.businessName || "").trim(),
+      formatPhoneForCalendar(source.primaryPhone),
+      String(source.email || "").trim(),
+      formatPhoneForCalendar(source.secondaryPhone),
+      String((settings && settings.fnolIntakeInitials) || "").trim().toUpperCase()
+    ].filter(function keep(value) {
+      return Boolean(String(value || "").trim());
+    });
+
+    return parts.join(" / ");
+  }
+
   function teamAllenTargetUrl(openVia) {
     return openVia === "modal"
       ? WORKCENTER_IMPORT.teamallenssmListUrl
@@ -837,6 +878,28 @@
       const payload = buildFnolPayload();
       copyPlainTextFromPayload(payload, function onDone(ok, message) {
         setStatus(message, ok ? "ok" : "error");
+      });
+    });
+  }
+
+  if (fnolCopyCalendarTitleBtn) {
+    fnolCopyCalendarTitleBtn.addEventListener("click", function onCopyCalendarTitle() {
+      const payload = buildFnolPayload();
+      settingsApi.getSettings(function onLoaded(settings) {
+        const title = buildCalendarTitleFromPayload(payload, settings);
+        if (!title) {
+          setStatus("Nothing to copy.", "error");
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(title).then(function ok() {
+            setStatus("Copied calendar title.", "ok");
+          }).catch(function fail() {
+            setStatus("Clipboard copy failed.", "error");
+          });
+        } else {
+          setStatus("Clipboard not available.", "error");
+        }
       });
     });
   }
