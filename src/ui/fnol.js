@@ -40,6 +40,7 @@
   const fnolCopyPlainBtn = document.getElementById("fnolCopyPlainBtn");
   const fnolCopyCalendarTitleBtn = document.getElementById("fnolCopyCalendarTitleBtn");
   const fnolCopyJsonBtn = document.getElementById("fnolCopyJsonBtn");
+  const fnolLoadFromScrapeBtn = document.getElementById("fnolLoadFromScrapeBtn");
   const fnolLossType = document.getElementById("fnolLossType");
   const fnolJobList = document.getElementById("fnolJobList");
   const fnolJobEmpty = document.getElementById("fnolJobEmpty");
@@ -192,6 +193,7 @@
     apply(fnolClearBtn, "fnolClearForm");
     apply(fnolCopyPlainBtn, "fnolCopyPlain");
     apply(fnolCopyJsonBtn, "fnolCopyJson");
+    apply(fnolLoadFromScrapeBtn, "fnolLoadFromScrape");
     apply(fnolNewEntryBtn, "fnolNewJob");
     apply(fnolUnlockBtn, "fnolUnlock");
     apply(openSettingsLink, "fnolOpenSettings");
@@ -405,7 +407,7 @@
     setSelectByLabelOrValue(fnolLossType, payload.lossType, payload.lossTypeValue);
     const notesEl = fnolForm.elements.namedItem("notesUser");
     if (notesEl) {
-      notesEl.value = payload.notesUser || "";
+      notesEl.value = payload.notesUser || payload.notes || "";
     }
     updateFnolNotesCounter();
   }
@@ -923,6 +925,51 @@
       } else {
         setStatus("Clipboard not available.", "error");
       }
+    });
+  }
+
+  function describeScrapeSource(payload) {
+    if (!payload || !payload.source) {
+      return payload && payload.projectName ? "WorkCenter" : "saved";
+    }
+    if (payload.source === "alacrity") {
+      return "Alacrity";
+    }
+    if (payload.source === "fnol") {
+      return "FNOL";
+    }
+    return String(payload.source);
+  }
+
+  if (fnolLoadFromScrapeBtn) {
+    fnolLoadFromScrapeBtn.addEventListener("click", function onLoadFromScrape() {
+      chrome.storage.local.get([WORKCENTER_IMPORT.storageKey], function onLoad(result) {
+        const payload = result && result[WORKCENTER_IMPORT.storageKey];
+        if (!payload || typeof payload !== "object") {
+          setStatus("No saved scrape found. Scrape on WorkCenter or Alacrity first.", "error");
+          return;
+        }
+        const hasFields =
+          payload.customerName ||
+          payload.claimNumber ||
+          payload.address1 ||
+          payload.primaryPhone;
+        if (!hasFields) {
+          setStatus("Saved payload has no recognizable job fields.", "error");
+          return;
+        }
+        applyPayloadToFnolForm(payload);
+        const sourceLabel = describeScrapeSource(payload);
+        let message = "Loaded from last " + sourceLabel + " scrape.";
+        if (payload.scrapedAt) {
+          const staleMs = (WORKCENTER_IMPORT.staleHours || 24) * 60 * 60 * 1000;
+          const age = Date.now() - new Date(payload.scrapedAt).getTime();
+          if (age > staleMs) {
+            message += " Warning: payload older than " + (WORKCENTER_IMPORT.staleHours || 24) + "h.";
+          }
+        }
+        setStatus(message, "ok");
+      });
     });
   }
 

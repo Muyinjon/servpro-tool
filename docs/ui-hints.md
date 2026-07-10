@@ -11,6 +11,7 @@ The extension shows these messages when you hover over buttons (browser tooltip)
 | Clear form | Clears fields only; does not delete Jobs entered list items. |
 | Copy as normal text | Readable paragraphs for email or Teams. |
 | Copy as JSON | Structured data for import helper—not for customers. |
+| Load from last scrape | Prefills form from last WorkCenter or Alacrity scrape in extension storage. |
 | New job | Blank form for another intake without submitting. |
 | Unlock FNOL | Enter access code to use intake. |
 | Open Settings | Access code, initials, auto-save, Google backup. |
@@ -22,7 +23,7 @@ Required fields on FNOL: **Customer**, **Phone 1**, **Address 1** (red asterisk)
 
 | Button | What it means |
 |--------|----------------|
-| Fill from payload | Fills add-job from saved WorkCenter or FNOL data. |
+| Fill from payload | Fills add-job from saved WorkCenter, Alacrity, or FNOL data. |
 | Update from payload | Updates edit-job from saved payload. |
 | Paste JSON | Paste clipboard into JSON editor. |
 | Copy job (JSON) | Copy job as JSON for re-import. |
@@ -39,7 +40,15 @@ Required fields on FNOL: **Customer**, **Phone 1**, **Address 1** (red asterisk)
 | Export JSON | Download .json file. |
 | Open job import | Save and open TeamAllen add job (full access). |
 
-## JSON panel (WorkCenter / TeamAllen)
+## Alacrity import helper
+
+| Button | What it means |
+|--------|----------------|
+| Scrape | Read claim fields from this Alacrity page and save in extension. |
+| Export JSON | Download Alacrity payload as .json file. |
+| Open job import | Save and open TeamAllen add job (full access). |
+
+## JSON panel (WorkCenter / Alacrity / TeamAllen)
 
 | Button | What it means |
 |--------|----------------|

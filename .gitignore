@@ -23,4 +23,5 @@ node_modules/
 # Keep small field-mapping references in the repo.
 examples/*
 !examples/workcenter-field.html
+!examples/alacrity-fields.html
 !examples/commerical-residential.html

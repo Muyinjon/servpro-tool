@@ -28,13 +28,18 @@
   ],
   "host_permissions": [
     "https://*.servpronet.io/*",
+    "https://em.alacrity.net/*",
     "https://teamallenssm.com/*",
     "https://docs.google.com/*"
   ],
   "web_accessible_resources": [
     {
       "resources": ["src/ui/theme.css"],
-      "matches": ["https://*.servpronet.io/*", "https://teamallenssm.com/*"]
+      "matches": [
+        "https://*.servpronet.io/*",
+        "https://em.alacrity.net/*",
+        "https://teamallenssm.com/*"
+      ]
     }
   ],
   "content_scripts": [
@@ -69,6 +74,27 @@
         "src/lib/kendoHelpers.js",
         "src/ui/panel.js",
         "src/content/docsFrame.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://em.alacrity.net/*"
+      ],
+      "js": [
+        "src/lib/settings.js",
+        "src/lib/tenantRegistry.js",
+        "src/lib/workcenterFields.js",
+        "src/lib/alacrityFields.js",
+        "src/lib/selectors.js",
+        "src/lib/kendoHelpers.js",
+        "src/lib/payloadPlainText.js",
+        "src/lib/buttonHints.js",
+        "src/ui/theme.js",
+        "src/ui/helperPanel.js",
+        "src/ui/panel.js",
+        "src/ui/importPayloadPanel.js",
+        "src/content/alacrityScraper.js"
       ],
       "run_at": "document_idle"
     },

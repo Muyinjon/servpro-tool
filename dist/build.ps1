@@ -45,6 +45,7 @@ $productionFiles = @(
     "src\lib\googleFormTeamAllen.js",
     "src\lib\selectors.js",
     "src\lib\workcenterFields.js",
+    "src\lib\alacrityFields.js",
     "src\lib\kendoHelpers.js",
     "src\lib\payloadPlainText.js",
     "src\lib\fnolNotes.js",
@@ -66,6 +67,7 @@ $productionFiles = @(
     # Content scripts
     "src\content\teamallenssmFill.js",
     "src\content\workcenterScraper.js",
+    "src\content\alacrityScraper.js",
     "src\content\topPage.js",
     "src\content\docsFrame.js"
 )

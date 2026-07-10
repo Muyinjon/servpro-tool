@@ -1700,7 +1700,7 @@
 
     const hint = document.createElement("div");
     hint.className = "sp-hint";
-    hint.textContent = "Paste WorkCenter JSON, save, then click Add Job above.";
+    hint.textContent = "Paste WorkCenter or Alacrity JSON, save, then click Add Job above.";
 
     function setStatus(message) {
       if (shell) {
@@ -1914,7 +1914,17 @@
     function summarizePayload(payload, index) {
       const when = payload && payload.scrapedAt ? new Date(payload.scrapedAt).toLocaleString() : "Unknown time";
       const primary = firstNonEmpty([payload.projectName, payload.customerName, payload.businessName, payload.claimNumber, "Record"]);
-      return "#" + (index + 1) + " - " + primary + " - " + when;
+      let sourceLabel = "";
+      if (payload && payload.source === "alacrity") {
+        sourceLabel = " [Alacrity]";
+      } else if (payload && payload.source === "fnol") {
+        sourceLabel = " [FNOL]";
+      } else if (payload && payload.source === "teamallen-edit") {
+        sourceLabel = " [TeamAllen]";
+      } else if (payload && payload.projectName) {
+        sourceLabel = " [WorkCenter]";
+      }
+      return "#" + (index + 1) + " - " + primary + sourceLabel + " - " + when;
     }
 
     function populateHistory(history, latest) {
@@ -2116,7 +2126,7 @@
           ? jobDefaultModeControl.getMode()
           : normalizeJobDefaultMode(storedJobDefaultMode || cachedSettings.defaultJobModeOnFill);
         if (!payload) {
-          setStatus("No payload to fill. Paste JSON, save a payload, or scrape on WorkCenter first.");
+          setStatus("No payload to fill. Paste JSON, save a payload, or scrape on WorkCenter or Alacrity first.");
           return;
         }
 
@@ -2180,8 +2190,8 @@
       } else {
         setStatus(
           editJobMode
-            ? "Ready. Paste JSON from WorkCenter or scrape there first, then click Update."
-            : "Ready. Paste JSON from WorkCenter or scrape there first."
+            ? "Ready. Paste JSON from WorkCenter or Alacrity, save, or scrape there first, then click Update."
+            : "Ready. Paste JSON from WorkCenter or Alacrity, or scrape there first."
         );
       }
       if (!editJobMode) {

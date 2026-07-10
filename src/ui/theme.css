@@ -275,6 +275,10 @@ body[data-servpro-theme] {
   display: none !important;
 }
 
+.servpro-helper-panel--alacrity {
+  border-top: 3px solid #282e8e;
+}
+
 .servpro-helper-header {
   display: flex;
   align-items: center;

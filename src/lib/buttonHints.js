@@ -12,6 +12,8 @@
       "Copies customer, address, insurance, and notes in readable paragraphs (good for email or Teams).",
     fnolCopyJson:
       "Copies the same data as structured JSON for the import helper or technical tools—not meant for customers.",
+    fnolLoadFromScrape:
+      "Prefills this form from the last WorkCenter or Alacrity scrape saved in the extension.",
     fnolNewJob:
       "Starts a blank form for another intake without submitting the current one.",
     fnolUnlock:
@@ -24,7 +26,7 @@
       "Adjuster details are added into notes on submit (500 character limit on the job site).",
 
     teamAllenFillFromPayload:
-      "Fills the add-job form from saved WorkCenter or FNOL data.",
+      "Fills the add-job form from saved WorkCenter, Alacrity, or FNOL data.",
     teamAllenUpdateFromPayload:
       "Updates the edit-job form from the saved payload.",
     teamAllenPasteJson: "Pastes JSON from your clipboard into the payload editor.",
@@ -44,6 +46,12 @@
       "Reads job fields from this WorkCenter page and saves them in the extension.",
     workcenterExportJson: "Downloads the payload as a .json file.",
     workcenterOpenImport:
+      "Saves the payload and opens TeamAllen to add the job (full access only).",
+
+    alacrityScrape:
+      "Reads claim fields from this Alacrity page and saves them in the extension.",
+    alacrityExportJson: "Downloads the Alacrity payload as a .json file.",
+    alacrityOpenImport:
       "Saves the payload and opens TeamAllen to add the job (full access only).",
 
     jsonShowPayload: "Expand or collapse the JSON editor.",
