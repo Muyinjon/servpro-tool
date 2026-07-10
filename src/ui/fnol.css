@@ -424,6 +424,26 @@ body {
   }
 }
 
+/* —— Address paste helper (Settings toggle) —— */
+.fnol-address-lookup {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--sp-border-subtle);
+  border-radius: 8px;
+  background: var(--sp-surface-muted, rgba(0, 0, 0, 0.03));
+}
+
+.fnol-address-lookup-hint {
+  margin: 0 0 8px;
+}
+
+.fnol-address-lookup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .hint {
   font-size: 11px;
   color: var(--sp-text-muted);

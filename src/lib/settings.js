@@ -45,7 +45,8 @@
     fnolClearAfterSubmit: false,
     fnolCopyOnSubmit: false,
     fnolIntakeInitials: "",
-    fnolGoogleFormBackup: true
+    fnolGoogleFormBackup: true,
+    fnolAddressLookupHelper: false
   };
 
   function getStorage() {

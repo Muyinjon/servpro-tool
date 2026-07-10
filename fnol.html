@@ -168,6 +168,27 @@
 
               <fieldset class="fnol-section fnol-section-address">
                 <legend>Address</legend>
+                <div id="fnolAddressLookupPanel" class="fnol-address-lookup" hidden>
+                  <p class="hint fnol-address-lookup-hint">
+                    Copy a full address from Google Maps (or elsewhere), paste below, then fill the form fields.
+                  </p>
+                  <div class="field field-span-all">
+                    <label for="fnolAddressLookupPaste">Paste full address</label>
+                    <textarea
+                      id="fnolAddressLookupPaste"
+                      rows="2"
+                      placeholder="20308 32ND AVE, BAYSIDE, NY 11361"
+                    ></textarea>
+                  </div>
+                  <div class="fnol-address-lookup-actions">
+                    <button type="button" id="fnolAddressLookupPasteClipboardBtn" class="btn secondary sm">
+                      Paste from clipboard
+                    </button>
+                    <button type="button" id="fnolAddressLookupFillBtn" class="btn secondary sm">
+                      Fill address fields
+                    </button>
+                  </div>
+                </div>
                 <div class="fnol-grid fnol-grid-address">
                   <div class="field field-span-all">
                     <label for="fnolAddress1"
@@ -272,6 +293,7 @@
     <script src="src/lib/tenantRegistry.js"></script>
     <script src="src/ui/theme.js"></script>
     <script src="src/lib/selectors.js"></script>
+    <script src="src/lib/workcenterFields.js"></script>
     <script src="src/lib/fnolNotes.js"></script>
     <script src="src/lib/payloadPlainText.js"></script>
     <script src="src/lib/googleFormTeamAllen.js"></script>

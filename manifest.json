@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ServPro Helper",
   "description": "Workflow tools for SERVPRO franchises — job import, FNOL, and WorkCenter integration.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "action": {
     "default_popup": "popup.html",
     "default_title": "ServPro Helper",

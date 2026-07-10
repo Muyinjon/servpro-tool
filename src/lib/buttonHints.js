@@ -14,6 +14,10 @@
       "Copies the same data as structured JSON for the import helper or technical tools—not meant for customers.",
     fnolLoadFromScrape:
       "Prefills this form from the last WorkCenter or Alacrity scrape saved in the extension.",
+    fnolAddressLookupPasteClipboard:
+      "Reads your clipboard into the paste box (browser may ask for permission).",
+    fnolAddressLookupFill:
+      "Splits the pasted address into Address 1, City, State, and Zip fields.",
     fnolNewJob:
       "Starts a blank form for another intake without submitting the current one.",
     fnolUnlock:
@@ -51,6 +55,7 @@
     alacrityScrape:
       "Reads claim fields from this Alacrity page and saves them in the extension.",
     alacrityExportJson: "Downloads the Alacrity payload as a .json file.",
+    alacrityCopyPlain: "Copies scraped claim data as readable text for email or Teams.",
     alacrityOpenImport:
       "Saves the payload and opens TeamAllen to add the job (full access only).",
 
@@ -80,6 +85,8 @@
       "Your initials appear on the Google Form backup row (e.g. IT). Required when backup is on.",
     settingsFnolClearAfterSubmit:
       "Clears the FNOL form after a successful submit.",
+    settingsFnolAddressLookupHelper:
+      "Shows paste-to-parse helper on the FNOL address section.",
     settingsFnolCopyOnSubmit:
       "Copies intake as plain text to the clipboard when you submit."
   };

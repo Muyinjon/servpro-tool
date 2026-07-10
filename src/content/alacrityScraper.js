@@ -208,6 +208,16 @@
       helperPanelApi.styleButton(exportButton);
     }
 
+    const copyPlainButton = document.createElement("button");
+    copyPlainButton.type = "button";
+    copyPlainButton.textContent = "Copy as normal text";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(copyPlainButton, "alacrityCopyPlain");
+    }
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(copyPlainButton);
+    }
+
     const autofillButton = document.createElement("button");
     autofillButton.type = "button";
     autofillButton.textContent = "Open job import";
@@ -254,6 +264,38 @@
         }
       });
     }
+
+    function getActivePayload() {
+      const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+      if (editorParsed.ok) {
+        return editorParsed.payload;
+      }
+      if (latestPayload) {
+        return latestPayload;
+      }
+      return buildPayload();
+    }
+
+    copyPlainButton.addEventListener("click", function onCopyPlain() {
+      const plainTextApi = root.payloadPlainText;
+      const payload = getActivePayload();
+      if (!plainTextApi || !plainTextApi.formatPayloadAsPlainText) {
+        setPanelStatus("Plain text formatter is not available.");
+        return;
+      }
+      const text = plainTextApi.formatPayloadAsPlainText(payload);
+      if (!normalizeText(text)) {
+        setPanelStatus("Nothing to copy. Scrape first.");
+        return;
+      }
+      if (!payloadPanelApi || !payloadPanelApi.copyText) {
+        setPanelStatus("Clipboard copy is not available.");
+        return;
+      }
+      payloadPanelApi.copyText(text, function onCopied(copied) {
+        setPanelStatus(copied ? "Copied as normal text." : "Clipboard copy failed.");
+      });
+    });
 
     scrapeButton.addEventListener("click", function onScrape() {
       scrapeAndStore();
@@ -341,6 +383,7 @@
     const toolbar = shell ? shell.toolbar : panel;
     toolbar.appendChild(scrapeButton);
     toolbar.appendChild(exportButton);
+    toolbar.appendChild(copyPlainButton);
     toolbar.appendChild(autofillButton);
 
     const body = shell ? shell.body : panel;

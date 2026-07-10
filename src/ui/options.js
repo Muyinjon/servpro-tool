@@ -42,7 +42,8 @@
     "showEditCopyButton",
     "fnolClearAfterSubmit",
     "fnolCopyOnSubmit",
-    "fnolGoogleFormBackup"
+    "fnolGoogleFormBackup",
+    "fnolAddressLookupHelper"
   ];
 
   // All team-settings selects (besides the two legacy ones)

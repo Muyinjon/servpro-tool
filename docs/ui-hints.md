@@ -12,12 +12,16 @@ The extension shows these messages when you hover over buttons (browser tooltip)
 | Copy as normal text | Readable paragraphs for email or Teams. |
 | Copy as JSON | Structured data for import helper—not for customers. |
 | Load from last scrape | Prefills form from last WorkCenter or Alacrity scrape in extension storage. |
+| Paste from clipboard | Reads clipboard into the address paste box. |
+| Fill address fields | Splits pasted address into Address 1, City, State, and Zip. |
 | New job | Blank form for another intake without submitting. |
 | Unlock FNOL | Enter access code to use intake. |
 | Open Settings | Access code, initials, auto-save, Google backup. |
 | Delete (job row) | Removes from local list only. |
 
 Required fields on FNOL: **Customer**, **Phone 1**, **Address 1** (red asterisk).
+
+Address paste helper (Settings, off by default): copy a full address from Google Maps, paste, then **Fill address fields**.
 
 ## TeamAllen import helper
 
@@ -46,6 +50,7 @@ Required fields on FNOL: **Customer**, **Phone 1**, **Address 1** (red asterisk)
 |--------|----------------|
 | Scrape | Read claim fields from this Alacrity page and save in extension. |
 | Export JSON | Download Alacrity payload as .json file. |
+| Copy as normal text | Readable claim summary for email or Teams (no JSON editor needed). |
 | Open job import | Save and open TeamAllen add job (full access). |
 
 ## JSON panel (WorkCenter / Alacrity / TeamAllen)

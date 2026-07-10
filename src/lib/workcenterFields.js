@@ -238,7 +238,8 @@
   }
 
   function parseAddress(fullAddress) {
-    const raw = normalizeText(fullAddress);
+    let raw = normalizeText(fullAddress);
+    raw = raw.replace(/,?\s*(USA|U\.S\.A\.|United States)\s*$/i, "");
     if (!raw) {
       return {
         address1: "",

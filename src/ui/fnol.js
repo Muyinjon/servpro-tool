@@ -49,6 +49,12 @@
   const fnolNotesCounter = document.getElementById("fnolNotesCounter");
   const NOTES_MAX_LENGTH = fnolNotesApi ? fnolNotesApi.NOTES_MAX_LENGTH : 500;
 
+  const fieldsApi = window.ServproUploadExtension && window.ServproUploadExtension.workcenterFields;
+  const fnolAddressLookupPanel = document.getElementById("fnolAddressLookupPanel");
+  const fnolAddressLookupPaste = document.getElementById("fnolAddressLookupPaste");
+  const fnolAddressLookupPasteClipboardBtn = document.getElementById("fnolAddressLookupPasteClipboardBtn");
+  const fnolAddressLookupFillBtn = document.getElementById("fnolAddressLookupFillBtn");
+
   const initialsDialog = document.getElementById("initialsDialog");
   const initialsInput = document.getElementById("initialsInput");
   const initialsConfirmBtn = document.getElementById("initialsConfirmBtn");
@@ -194,6 +200,8 @@
     apply(fnolCopyPlainBtn, "fnolCopyPlain");
     apply(fnolCopyJsonBtn, "fnolCopyJson");
     apply(fnolLoadFromScrapeBtn, "fnolLoadFromScrape");
+    apply(fnolAddressLookupPasteClipboardBtn, "fnolAddressLookupPasteClipboard");
+    apply(fnolAddressLookupFillBtn, "fnolAddressLookupFill");
     apply(fnolNewEntryBtn, "fnolNewJob");
     apply(fnolUnlockBtn, "fnolUnlock");
     apply(openSettingsLink, "fnolOpenSettings");
@@ -203,6 +211,96 @@
       if (hintsApi.applySubmitHint) {
         hintsApi.applySubmitHint(fnolSubmitBtn, settings, settingsApi);
       }
+    });
+  }
+
+  function normalizeLookupQuery(value) {
+    return String(value || "").replace(/[\u00a0\s]+/g, " ").trim();
+  }
+
+  function updateAddressLookupVisibility(settings) {
+    if (!fnolAddressLookupPanel) {
+      return;
+    }
+    const enabled = Boolean(settings && settings.fnolAddressLookupHelper);
+    fnolAddressLookupPanel.hidden = !enabled;
+  }
+
+  function clearAddressLookupInputs() {
+    if (fnolAddressLookupPaste) {
+      fnolAddressLookupPaste.value = "";
+    }
+  }
+
+  function applyParsedAddress(parsed) {
+    if (!fnolForm || !parsed) {
+      return false;
+    }
+    const mapping = [
+      ["address1", "fnolAddress1"],
+      ["city", "fnolCity"],
+      ["state", "fnolState"],
+      ["zip", "fnolZip"]
+    ];
+    let filled = 0;
+    mapping.forEach(function eachField(key) {
+      const fieldKey = key[0];
+      const elId = key[1];
+      const value = normalizeLookupQuery(parsed[fieldKey]);
+      if (!value) {
+        return;
+      }
+      const el = document.getElementById(elId);
+      if (el) {
+        el.value = value;
+        filled += 1;
+      }
+    });
+    return filled > 0;
+  }
+
+  function fillAddressFromLookupPaste() {
+    const parseAddress = fieldsApi && fieldsApi.parseAddress;
+    if (!parseAddress || !fnolAddressLookupPaste) {
+      setStatus("Address parser is not available.", "error");
+      return;
+    }
+    const raw = normalizeLookupQuery(fnolAddressLookupPaste.value);
+    if (!raw) {
+      setStatus("Paste a full address first.", "error");
+      return;
+    }
+    const parsed = parseAddress(raw);
+    if (!applyParsedAddress(parsed)) {
+      setStatus("Could not parse address. Use format: Street, City, ST 12345", "error");
+      return;
+    }
+    setStatus("Address fields filled. Review and edit if needed.", "ok");
+  }
+
+  function initAddressLookup() {
+    if (fnolAddressLookupPasteClipboardBtn) {
+      fnolAddressLookupPasteClipboardBtn.addEventListener("click", function onPasteClipboard() {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          setStatus("Clipboard read is not available.", "error");
+          return;
+        }
+        navigator.clipboard.readText().then(function onRead(text) {
+          if (fnolAddressLookupPaste) {
+            fnolAddressLookupPaste.value = normalizeLookupQuery(text);
+          }
+          setStatus("Pasted from clipboard.", "ok");
+        }).catch(function onFail() {
+          setStatus("Could not read clipboard. Paste manually (Ctrl+V).", "error");
+        });
+      });
+    }
+    if (fnolAddressLookupFillBtn) {
+      fnolAddressLookupFillBtn.addEventListener("click", fillAddressFromLookupPaste);
+    }
+
+    settingsApi.getSettings(function onLoaded(settings) {
+      updateAddressLookupVisibility(settings);
     });
   }
 
@@ -256,6 +354,7 @@
     }
     if (settings) {
       updateSubmitButtonLabel(settings);
+      updateAddressLookupVisibility(settings);
     } else {
       settingsApi.getSettings(function onLoadedForLabel(s) {
         updateSubmitButtonLabel(s);
@@ -798,6 +897,7 @@
       }
       const settings = settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue);
       setActivated(settingsApi.isFnolAccessible(settings), null, settings);
+      updateAddressLookupVisibility(settings);
     });
   }
 
@@ -850,10 +950,12 @@
   loadFnolRegistry();
   refreshActivationState();
   initFnolButtonHints();
+  initAddressLookup();
 
   function startNewEntry() {
     fnolForm.reset();
     setActiveJobIndex(-1);
+    clearAddressLookupInputs();
     setStatus("");
     updateFnolNotesCounter();
     settingsApi.getSettings(function onLoaded(settings) {
