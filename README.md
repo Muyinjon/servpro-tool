@@ -16,6 +16,12 @@ Chrome extension for ServPro WorkCenter that helps users quickly apply one image
 3. Click `Load unpacked`
 4. Select this project folder
 
+### Package for Chrome Web Store (upload zip)
+
+Double-click **`build-extension.bat`** in the project root (or run `dist\build.ps1` in PowerShell).
+
+It creates **`dist\servpro-helper-v<version>.zip`** with only the files needed for the extension — ready to upload at the [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole). The `dist` folder opens automatically after a successful build.
+
 ## Use
 
 1. Open a ServPro WorkCenter job

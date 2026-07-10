@@ -106,4 +106,9 @@ Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $zipPath
 Remove-Item $staging -Recurse -Force
 
 $zipSize = (Get-Item $zipPath).Length
+Write-Host ""
 Write-Host "Done: $zipName ($([Math]::Round($zipSize/1KB, 1)) KB)" -ForegroundColor Green
+Write-Host "Full path:" -ForegroundColor Cyan
+Write-Host "  $zipPath" -ForegroundColor White
+Write-Host ""
+Write-Host "Upload this zip at: https://chrome.google.com/webstore/devconsole" -ForegroundColor DarkGray
