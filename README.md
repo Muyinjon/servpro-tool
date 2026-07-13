@@ -69,6 +69,7 @@ Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-base
    - Expand **Show payload JSON** to review or edit values, then `Save payload`.
    - `Copy JSON` (in the JSON panel) copies the current editor text.
    - `Export JSON` downloads the current editor text as a `.json` file.
+   - `Copy as normal text` copies a readable job summary (same as Alacrity capture; always visible on the toolbar).
    - `Autofill TeamAllenssm` saves the current payload and opens TeamAllen (jobs list + Add Job popup by default, or the full add page if configured).
 3. On the TeamAllen add-job form (popup iframe or full page), use **TeamAllenssm Import Helper**:
    - Review or edit JSON, then click `Fill from WorkCenter payload`.

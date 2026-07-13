@@ -48,8 +48,17 @@
   }
 
   function byIdText(id) {
-    const node = document.getElementById(id);
-    return normalizeText(node ? node.textContent : "");
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      const node = doc.getElementById(id);
+      if (node) {
+        found = normalizeText(node.textContent);
+      }
+    });
+    return found;
   }
 
   function byIdValue(id) {
@@ -84,22 +93,107 @@
     return normalizeText(node.value);
   }
 
+  function readNodeValue(node) {
+    if (!node) {
+      return "";
+    }
+    const direct = readValueControl(node);
+    if (direct !== "" || isValueControl(node)) {
+      return direct;
+    }
+    if (String(node.tagName || "").toUpperCase() === "INPUT" && String(node.type || "").toLowerCase() === "hidden") {
+      return normalizeText(node.value);
+    }
+    const nested = node.querySelector(
+      "input.frmField, input.textBox, input.rcbInput, textarea.lblNotes, textarea, select.frmField, select"
+    );
+    return readValueControl(nested);
+  }
+
+  // Top document + same-origin iframes (JobDetail tab content).
+  function eachSearchDocument(callback) {
+    callback(document);
+    const frames = document.querySelectorAll("iframe");
+    for (let index = 0; index < frames.length; index += 1) {
+      try {
+        const frameDoc = frames[index].contentDocument;
+        if (frameDoc && frameDoc !== document) {
+          callback(frameDoc);
+        }
+      } catch (error) {
+        // Cross-origin iframe — skip.
+      }
+    }
+  }
+
+  // Match WorkCenter jQuery style: $("[id$='suffix']").
+  function byIdEndsWith(suffix) {
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      let nodes;
+      try {
+        nodes = doc.querySelectorAll('[id$="' + suffix + '"]');
+      } catch (error) {
+        return;
+      }
+      for (let index = 0; index < nodes.length; index += 1) {
+        const value = readNodeValue(nodes[index]);
+        if (value !== "") {
+          found = value;
+          return;
+        }
+      }
+    });
+    return found;
+  }
+
+  function byIdEndsWithNode(suffix) {
+    let found = null;
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      let nodes;
+      try {
+        nodes = doc.querySelectorAll('[id$="' + suffix + '"]');
+      } catch (error) {
+        return;
+      }
+      if (nodes.length) {
+        found = nodes[0];
+      }
+    });
+    return found;
+  }
+
   // WorkCenter jobCustom* markup duplicates id on the wrapper DIV and the input.
   // Prefer name= (unique on the real control) over getElementById.
   function byNameControlValue(name) {
-    const nodes = document.querySelectorAll(
-      'input[name="' + name + '"], textarea[name="' + name + '"], select[name="' + name + '"]'
-    );
-    for (let index = 0; index < nodes.length; index += 1) {
-      const value = readValueControl(nodes[index]);
-      if (value !== "") {
-        return value;
+    let found = "";
+    let sawEmptyControl = false;
+    eachSearchDocument(function onDoc(doc) {
+      if (found || sawEmptyControl) {
+        return;
       }
-      if (isValueControl(nodes[index])) {
-        return "";
+      const nodes = doc.querySelectorAll(
+        'input[name="' + name + '"], textarea[name="' + name + '"], select[name="' + name + '"]'
+      );
+      for (let index = 0; index < nodes.length; index += 1) {
+        const value = readValueControl(nodes[index]);
+        if (value !== "") {
+          found = value;
+          return;
+        }
+        if (isValueControl(nodes[index])) {
+          sawEmptyControl = true;
+          return;
+        }
       }
-    }
-    return "";
+    });
+    return found;
   }
 
   function byIdControlValue(id) {
@@ -109,64 +203,208 @@
         return byName;
       }
     }
-    const node = document.getElementById(id);
-    if (!node) {
-      return "";
-    }
-    const direct = readValueControl(node);
-    if (direct !== "" || isValueControl(node)) {
-      return direct;
-    }
-    const nested = node.querySelector(
-      "input.frmField, input.textBox, input.rcbInput, textarea.lblNotes, textarea, select.frmField, select"
-    );
-    return readValueControl(nested);
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      const node = doc.getElementById(id);
+      if (!node) {
+        return;
+      }
+      found = readNodeValue(node);
+    });
+    return found;
   }
 
   function selectSelectedText(id) {
-    const select = document.getElementById(id);
-    if (!select || select.tagName !== "SELECT") {
-      return "";
-    }
-    const option = select.options[select.selectedIndex];
-    return normalizeText(option ? option.textContent : "");
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      const select = doc.getElementById(id);
+      if (!select || select.tagName !== "SELECT") {
+        return;
+      }
+      const option = select.options[select.selectedIndex];
+      found = normalizeText(option ? option.textContent : "");
+    });
+    return found;
+  }
+
+  function selectSelectedTextBySuffix(suffix) {
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      let nodes;
+      try {
+        nodes = doc.querySelectorAll('select[id$="' + suffix + '"]');
+      } catch (error) {
+        return;
+      }
+      for (let index = 0; index < nodes.length; index += 1) {
+        const select = nodes[index];
+        const option = select.options && select.options[select.selectedIndex];
+        const text = normalizeText(option ? option.textContent : "");
+        if (text) {
+          found = text;
+          return;
+        }
+      }
+    });
+    return found;
   }
 
   function selectSelectedAbbrev(id) {
-    const select = document.getElementById(id);
-    if (!select || select.tagName !== "SELECT") {
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      const select = doc.getElementById(id);
+      if (!select || select.tagName !== "SELECT") {
+        return;
+      }
+      const option = select.options[select.selectedIndex];
+      if (!option) {
+        return;
+      }
+      const abbrev = normalizeText(option.textContent);
+      if (abbrev && abbrev.length <= 4) {
+        found = abbrev;
+        return;
+      }
+      found = normalizeText(option.value);
+    });
+    return found;
+  }
+
+  function parseRadComboClientStateText(suffix) {
+    const node = byIdEndsWithNode(suffix);
+    if (!node) {
       return "";
     }
-    const option = select.options[select.selectedIndex];
-    if (!option) {
+    const raw = normalizeText(node.value || node.textContent);
+    if (!raw) {
       return "";
     }
-    const abbrev = normalizeText(option.textContent);
-    if (abbrev && abbrev.length <= 4) {
-      return abbrev;
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeText(parsed && parsed.text);
+    } catch (error) {
+      return "";
     }
-    return normalizeText(option.value);
+  }
+
+  function extractInsuranceCarrier() {
+    return firstNonEmpty([
+      byIdEndsWith("cmb_Project_Input"),
+      byIdValue("ctl00_MainContent_cmb_Project_Input"),
+      parseRadComboClientStateText("cmb_Project_ClientState"),
+      extractProjectLinkTitle(),
+      extractByLabeledControl("Insurance Carrier"),
+      extractByLabel(["Insurance Carrier", "Insurance Company"])
+    ]);
+  }
+
+  function extractProjectLinkTitle() {
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      const link = doc.getElementById("lnk_LoadSelectedProject")
+        || doc.querySelector('a[id$="LoadSelectedProject"]');
+      if (!link) {
+        return;
+      }
+      const title = normalizeText(link.getAttribute("title") || "");
+      if (!title) {
+        return;
+      }
+      found = title.replace(/^go\s+to\s+/i, "").trim();
+    });
+    return found;
+  }
+
+  function extractJobNotes() {
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      const notesRoot = doc.getElementById("jobNotesButtons");
+      if (notesRoot) {
+        const ta = notesRoot.querySelector("textarea.lblNotes, textarea[id$='txt_Notes'], textarea");
+        const value = readValueControl(ta);
+        if (value) {
+          found = value;
+          return;
+        }
+      }
+      let nodes;
+      try {
+        nodes = doc.querySelectorAll('textarea[id$="txt_Notes"]');
+      } catch (error) {
+        return;
+      }
+      for (let index = 0; index < nodes.length; index += 1) {
+        const node = nodes[index];
+        const id = String(node.id || "");
+        if (/RedFlag|BillingAndCollections/i.test(id)) {
+          continue;
+        }
+        const value = readValueControl(node);
+        if (value) {
+          found = value;
+          return;
+        }
+      }
+    });
+    if (found) {
+      return found;
+    }
+    return extractByLabeledControl("Notes");
+  }
+
+  function extractPropertyType() {
+    return firstNonEmpty([
+      selectSelectedText("MainContent_cmb_JobType"),
+      selectSelectedTextBySuffix("cmb_JobType"),
+      extractByLabeledControl("Property Type"),
+      extractByLabel("Property Type")
+    ]);
   }
 
   function extractEmailFromLink(elementId) {
-    const link = document.getElementById(elementId);
-    if (!link) {
-      return "";
-    }
-    const text = normalizeText(link.textContent);
-    if (text) {
-      return text;
-    }
-    const href = String(link.getAttribute("href") || "");
-    const match = href.match(/[?&]e=([^&]+)/i);
-    if (match && match[1]) {
-      try {
-        return normalizeText(decodeURIComponent(match[1]).replace(/\+/g, " "));
-      } catch (error) {
-        return normalizeText(match[1]);
+    let found = "";
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
       }
-    }
-    return "";
+      const link = doc.getElementById(elementId);
+      if (!link) {
+        return;
+      }
+      const text = normalizeText(link.textContent);
+      if (text) {
+        found = text;
+        return;
+      }
+      const href = String(link.getAttribute("href") || "");
+      const match = href.match(/[?&]e=([^&]+)/i);
+      if (match && match[1]) {
+        try {
+          found = normalizeText(decodeURIComponent(match[1]).replace(/\+/g, " "));
+        } catch (error) {
+          found = normalizeText(match[1]);
+        }
+      }
+    });
+    return found;
   }
 
   function extractEmail() {
@@ -187,10 +425,17 @@
   }
 
   function getJobDetailsRoot() {
-    return document.getElementById("jobDetailWrapper")
-      || document.getElementById("MainContent_pnl_JobDetailsHead")
-      || document.getElementById("bodyWrapper")
-      || document.body;
+    let found = null;
+    eachSearchDocument(function onDoc(doc) {
+      if (found) {
+        return;
+      }
+      found = doc.getElementById("jobDetailWrapper")
+        || doc.getElementById("MainContent_pnl_JobDetailsHead")
+        || doc.getElementById("bodyWrapper")
+        || (doc.body && doc === document ? doc.body : null);
+    });
+    return found || document.body;
   }
 
   function readControlValue(node) {
@@ -363,6 +608,7 @@
     // Prefer the General form input; header lblJobLotBlock is often empty/hidden.
     const sources = [
       byIdValue("MainContent_txt_LotBlock"),
+      byIdEndsWith("txt_LotBlock"),
       extractByLabeledControl("Claim Number", {
         validateValue: isPlausibleClaimNumber
       }),
@@ -495,17 +741,25 @@
     const primaryParsed = extractContactParts(primaryContactRaw);
     const secondaryParsed = extractContactParts(secondaryContactRaw);
 
-    const propertyType = firstNonEmpty([
-      selectSelectedText("MainContent_cmb_JobType"),
-      extractByLabeledControl("Property Type"),
-      extractByLabel("Property Type")
-    ]);
+    const propertyType = extractPropertyType();
 
-    const fullAddressNode = document.getElementById("MainContent_JobInfoHeader1_txt_FullAddress");
+    const fullAddressNode = (function findFullAddress() {
+      let node = null;
+      eachSearchDocument(function onDoc(doc) {
+        if (node) {
+          return;
+        }
+        node = doc.getElementById("MainContent_JobInfoHeader1_txt_FullAddress");
+      });
+      return node;
+    })();
     const fullAddress = normalizeText(fullAddressNode ? fullAddressNode.textContent : extractByLabel("Address"));
     const parsedAddress = parseAddress(fullAddress);
 
-    const domAddress1 = byIdValue("MainContent_txt_Address1");
+    const domAddress1 = firstNonEmpty([
+      byIdValue("MainContent_txt_Address1"),
+      byIdEndsWith("txt_Address1")
+    ]);
     const address1 = resolveAddress1(domAddress1, parsedAddress);
     const address2 = firstNonEmpty([
       byIdValue("MainContent_txt_Unit"),
@@ -514,42 +768,41 @@
     ]);
     const city = firstNonEmpty([
       byIdValue("MainContent_txt_City"),
+      byIdEndsWith("txt_City"),
       extractByLabel("City"),
       parsedAddress.city
     ]);
     const state = firstNonEmpty([
       selectSelectedAbbrev("MainContent_cmb_StateCD"),
+      selectSelectedTextBySuffix("cmb_StateCD"),
       extractByLabel("State/Province"),
       parsedAddress.state
     ]);
     const zip = firstNonEmpty([
       byIdValue("MainContent_txt_Zip"),
+      byIdEndsWith("txt_Zip"),
       extractByLabel(["ZIP/Postal", "Zip/Postal Code", "Zip"]),
       parsedAddress.zip
     ]);
 
-    const insuranceRaw = firstNonEmpty([
-      byIdValue("ctl00_MainContent_cmb_Project_Input"),
-      extractByLabeledControl("Insurance Carrier"),
-      extractByLabel(["Insurance Carrier", "Insurance Company"])
-    ]);
+    const insuranceRaw = extractInsuranceCarrier();
     const claimNumber = extractClaimNumber();
-    const notes = firstNonEmpty([
-      byIdValue("MainContent_txt_Notes"),
-      extractByLabeledControl("Notes")
-    ]);
+    const notes = extractJobNotes();
     const policyNumber = firstNonEmpty([
       byNameControlValue("jobCustom1"),
       byIdControlValue("jobCustom1"),
+      byIdEndsWith("jobCustom1"),
       extractByLabeledControl(["Policy Numbr", "Policy Number"])
     ]);
     const deductible = firstNonEmpty([
       byNameControlValue("jobCustom2"),
       byIdControlValue("jobCustom2"),
+      byIdEndsWith("jobCustom2"),
       extractByLabeledControl(["Deductible Amt", "Deductible"])
     ]);
     const projectId = firstNonEmpty([
       byIdValue("MainContent_txt_JobID"),
+      byIdEndsWith("txt_JobID"),
       extractByLabeledControl(["ID", "Job ID", "Project ID"]),
       byIdText("MainContent_JobInfoHeader1_lbl_JobId"),
       extractByLabel("Project ID")
@@ -557,6 +810,7 @@
     const yearBuilt = firstNonEmpty([
       byIdValue("MainContent_txt_YearHouseBuilt"),
       byIdValue("ctl00_MainContent_txt_YearHouseBuilt"),
+      byIdEndsWith("txt_YearHouseBuilt"),
       extractByLabeledControl("Year Built"),
       extractByLabel(["Year Built", "YearBuilt"])
     ]);
@@ -598,7 +852,10 @@
       ]);
     }
 
-    const coordinatorRaw = byIdValue("ctl00_MainContent_cmb_Staff5_Input");
+    const coordinatorRaw = firstNonEmpty([
+      byIdValue("ctl00_MainContent_cmb_Staff5_Input"),
+      byIdEndsWith("cmb_Staff5_Input")
+    ]);
     const addLocation = mapAddLocationForTeamAllen(propertyType);
 
     return {
@@ -629,6 +886,9 @@
       franchiseName: byIdText("MainContent_JobInfoHeader1_lblJobSite"),
       businessUnit: deriveBusinessUnit(byIdText("MainContent_JobInfoHeader1_lblJobSite")),
       country: firstNonEmpty([
+        selectSelectedText("MainContent_cmb_Country"),
+        selectSelectedTextBySuffix("cmb_Country"),
+        byIdEndsWith("cmb_Country"),
         extractByLabeledControl("Country"),
         extractByLabel("Country"),
         parsedAddress.country
@@ -818,6 +1078,16 @@
       helperPanelApi.styleButton(exportButton);
     }
 
+    const copyPlainButton = document.createElement("button");
+    copyPlainButton.type = "button";
+    copyPlainButton.textContent = "Copy as normal text";
+    if (hintsApi && hintsApi.applyButtonHint) {
+      hintsApi.applyButtonHint(copyPlainButton, "workcenterCopyPlain");
+    }
+    if (helperPanelApi) {
+      helperPanelApi.styleButton(copyPlainButton);
+    }
+
     const autofillButton = document.createElement("button");
     autofillButton.type = "button";
     autofillButton.textContent = "Open job import";
@@ -865,8 +1135,40 @@
       });
     }
 
+    function getActivePayload() {
+      const editorParsed = jsonEditor ? jsonEditor.getPayloadFromEditor() : { ok: false };
+      if (editorParsed.ok) {
+        return editorParsed.payload;
+      }
+      if (latestPayload) {
+        return latestPayload;
+      }
+      return buildPayload();
+    }
+
     scrapeButton.addEventListener("click", function onScrape() {
       scrapeAndStore();
+    });
+
+    copyPlainButton.addEventListener("click", function onCopyPlain() {
+      const plainTextApi = root.payloadPlainText;
+      const payload = getActivePayload();
+      if (!plainTextApi || !plainTextApi.formatPayloadAsPlainText) {
+        setPanelStatus("Plain text formatter is not available.");
+        return;
+      }
+      const text = plainTextApi.formatPayloadAsPlainText(payload);
+      if (!normalizeText(text)) {
+        setPanelStatus("Nothing to copy. Scrape first.");
+        return;
+      }
+      if (!payloadPanelApi || !payloadPanelApi.copyText) {
+        setPanelStatus("Clipboard copy is not available.");
+        return;
+      }
+      payloadPanelApi.copyText(text, function onCopied(copied) {
+        setPanelStatus(copied ? "Copied as normal text." : "Clipboard copy failed.");
+      });
     });
 
     exportButton.addEventListener("click", function onExport() {
@@ -953,6 +1255,7 @@
     const toolbar = shell ? shell.toolbar : panel;
     toolbar.appendChild(scrapeButton);
     toolbar.appendChild(exportButton);
+    toolbar.appendChild(copyPlainButton);
     toolbar.appendChild(autofillButton);
 
     const wcBody = shell ? shell.body : panel;

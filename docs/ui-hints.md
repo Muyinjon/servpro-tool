@@ -42,6 +42,7 @@ Address paste helper (Settings, off by default): copy a full address from Google
 |--------|----------------|
 | Scrape | Read fields from WorkCenter and save in extension. |
 | Export JSON | Download .json file. |
+| Copy as normal text | Readable job summary for email or Teams (no JSON editor needed). |
 | Open job import | Save and open TeamAllen add job (full access). |
 
 ## Alacrity import helper

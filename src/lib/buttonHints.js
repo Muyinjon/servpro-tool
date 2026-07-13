@@ -49,6 +49,8 @@
     workcenterScrape:
       "Reads job fields from this WorkCenter page and saves them in the extension.",
     workcenterExportJson: "Downloads the payload as a .json file.",
+    workcenterCopyPlain:
+      "Copies scraped job data as readable text for email or Teams.",
     workcenterOpenImport:
       "Saves the payload and opens TeamAllen to add the job (full access only).",
 

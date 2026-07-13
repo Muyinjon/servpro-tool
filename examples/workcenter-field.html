@@ -12,8 +12,8 @@ MainContent_txt_LotBlock = claim number (General form — preferred) = <div clas
     <input name="ctl00$MainContent$txt_LotBlock" type="text" value="320H7R728:RECON" maxlength="50" id="MainContent_txt_LotBlock" tabindex="30" class="frmField" style="width:200px;">
 </div>
 MainContent_txt_JobID = project / job id (General form) = <input name="ctl00$MainContent$txt_JobID" type="text" value="2607-339357REC" maxlength="100" id="MainContent_txt_JobID" disabled="disabled" class="aspNetDisabled frmField input-value">
-MainContent_txt_Notes = notes = <textarea name="ctl00$MainContent$txt_Notes" rows="2" cols="20" id="MainContent_txt_Notes" class="lblNotes">Caller Name: ... CLAIM REP. PHONE : ...</textarea>
-MainContent_tr_JobType = property type = <div id="MainContent_tr_JobType" class="input-group" style="display:inline;">
+MainContent_txt_Notes = notes (prefer id$=txt_Notes under #jobNotesButtons) = <textarea name="ctl00$MainContent$txt_Notes" rows="2" cols="20" id="MainContent_txt_Notes" class="lblNotes">Caller Name: ... CLAIM REP. PHONE : ...</textarea>
+MainContent_tr_JobType = property type (prefer id$=cmb_JobType) = <div id="MainContent_tr_JobType" class="input-group" style="display:inline;">
     <div class="input-label">
         <span id="MainContent_lbl_JobType" class="lblField" style="background-color:White;">Property Type:</span>
     </div>
@@ -39,7 +39,9 @@ jobCustom2 = deductible amt (prefer name=jobCustom2; wrapper DIV also uses id=jo
     <input class="frmField input-value textBox" id="jobCustom2" name="jobCustom2" type="text" value="0">
     <label id="requiredMessage" class="errorText displayNone">Required</label>
 </div>
-ctl00_MainContent_cmb_Project_Input = Insurance carrier = <input name="ctl00$MainContent$cmb_Project" type="text" class="rcbInput radPreventDecorate" id="ctl00_MainContent_cmb_Project_Input" value="State Farm (Insurance)" tabindex="5" disabled="disabled" autocomplete="off">
+ctl00_MainContent_cmb_Project_Input = Insurance carrier (prefer id$=cmb_Project_Input; fallback ClientState .text / lnk title) = <input name="ctl00$MainContent$cmb_Project" type="text" class="rcbInput radPreventDecorate" id="ctl00_MainContent_cmb_Project_Input" value="State Farm (Insurance)" tabindex="5" disabled="disabled" autocomplete="off">
+ctl00_MainContent_cmb_Project_ClientState = Insurance carrier ClientState JSON = <input id="ctl00_MainContent_cmb_Project_ClientState" type="hidden" value="{&quot;text&quot;:&quot;State Farm (Insurance)&quot;}">
+lnk_LoadSelectedProject = Insurance carrier title fallback = <a id="lnk_LoadSelectedProject" title="Go to State Farm (Insurance)"></a>
 ctl00$MainContent$txt_Address1 = address1 = <input name="ctl00$MainContent$txt_Address1" type="text" value="165 Boyd St" maxlength="100" id="MainContent_txt_Address1" tabindex="35" class="frmField pac-target-input" onchange="clearLatLng()" style="width:300px;" placeholder="Enter a location" autocomplete="off">
 MainContent_txt_YearHouseBuilt / ctl00_MainContent_txt_YearHouseBuilt = year built = <input id="MainContent_txt_YearHouseBuilt" ...> or RadInput <input id="ctl00_MainContent_txt_YearHouseBuilt" name="ctl00$MainContent$txt_YearHouseBuilt" maxlength="4" class="riTextBox riEnabled" type="text">
 ctl00$MainContent$txt_Bldg = building = <input name="ctl00$MainContent$txt_Bldg" type="text" maxlength="50" id="MainContent_txt_Bldg" tabindex="45" class="frmField">
