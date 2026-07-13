@@ -97,31 +97,47 @@
     if (!node) {
       return "";
     }
-    const direct = readValueControl(node);
-    if (direct !== "" || isValueControl(node)) {
-      return direct;
+    try {
+      const direct = readValueControl(node);
+      if (direct !== "" || isValueControl(node)) {
+        return direct;
+      }
+      if (String(node.tagName || "").toUpperCase() === "INPUT" && String(node.type || "").toLowerCase() === "hidden") {
+        return normalizeText(node.value);
+      }
+      const nested = node.querySelector
+        ? node.querySelector(
+          "input.frmField, input.textBox, input.rcbInput, textarea.lblNotes, textarea, select.frmField, select"
+        )
+        : null;
+      return readValueControl(nested);
+    } catch (error) {
+      return "";
     }
-    if (String(node.tagName || "").toUpperCase() === "INPUT" && String(node.type || "").toLowerCase() === "hidden") {
-      return normalizeText(node.value);
-    }
-    const nested = node.querySelector(
-      "input.frmField, input.textBox, input.rcbInput, textarea.lblNotes, textarea, select.frmField, select"
-    );
-    return readValueControl(nested);
   }
 
   // Top document + same-origin iframes (JobDetail tab content).
   function eachSearchDocument(callback) {
-    callback(document);
-    const frames = document.querySelectorAll("iframe");
+    try {
+      callback(document);
+    } catch (error) {
+      // Ignore top-document read failures.
+    }
+    let frames;
+    try {
+      frames = document.querySelectorAll("iframe");
+    } catch (error) {
+      return;
+    }
     for (let index = 0; index < frames.length; index += 1) {
       try {
-        const frameDoc = frames[index].contentDocument;
+        const frame = frames[index];
+        const frameDoc = frame && frame.contentDocument;
         if (frameDoc && frameDoc !== document) {
           callback(frameDoc);
         }
       } catch (error) {
-        // Cross-origin iframe — skip.
+        // Cross-origin or detached iframe — skip.
       }
     }
   }
@@ -416,10 +432,20 @@
   }
 
   function getBodyLines() {
-    return String(document.body ? document.body.innerText : "")
+    let text = "";
+    try {
+      if (!document.body) {
+        return [];
+      }
+      // Prefer textContent: innerText forces layout and can throw on busy WorkCenter DOM.
+      text = document.body.textContent || document.body.innerText || "";
+    } catch (error) {
+      return [];
+    }
+    return String(text)
       .split(/\r?\n/)
       .map(function trimLine(line) {
-        return line.trim();
+        return String(line || "").trim();
       })
       .filter(Boolean);
   }
@@ -606,29 +632,55 @@
 
   function extractClaimNumber() {
     // Prefer the General form input; header lblJobLotBlock is often empty/hidden.
-    const sources = [
-      byIdValue("MainContent_txt_LotBlock"),
-      byIdEndsWith("txt_LotBlock"),
-      extractByLabeledControl("Claim Number", {
-        validateValue: isPlausibleClaimNumber
-      }),
-      byIdText("MainContent_JobInfoHeader1_lblJobLotBlock"),
-      extractByLabel("Claim Number", {
-        requireColon: true,
-        inlineOnly: true,
-        validateValue: isPlausibleClaimNumber
-      })
+    // Evaluate lazily so a failing fallback does not run after a good hit.
+    const sourceFns = [
+      function fromLotBlock() {
+        return byIdValue("MainContent_txt_LotBlock");
+      },
+      function fromLotBlockSuffix() {
+        return byIdEndsWith("txt_LotBlock");
+      },
+      function fromLabeledControl() {
+        return extractByLabeledControl("Claim Number", {
+          validateValue: isPlausibleClaimNumber
+        });
+      },
+      function fromHeader() {
+        return byIdText("MainContent_JobInfoHeader1_lblJobLotBlock");
+      },
+      function fromBodyLabel() {
+        return extractByLabel("Claim Number", {
+          requireColon: true,
+          inlineOnly: true,
+          validateValue: isPlausibleClaimNumber
+        });
+      }
     ];
 
-    for (let index = 0; index < sources.length; index += 1) {
-      const sanitized = sanitizeClaimNumber(sources[index]);
+    for (let index = 0; index < sourceFns.length; index += 1) {
+      let raw = "";
+      try {
+        raw = sourceFns[index]();
+      } catch (error) {
+        raw = "";
+      }
+      const sanitized = sanitizeClaimNumber(raw);
       if (sanitized) {
         return sanitized;
       }
     }
 
-    const lines = getBodyLines();
-    for (const line of lines) {
+    let lines = [];
+    try {
+      lines = getBodyLines();
+    } catch (error) {
+      return "";
+    }
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
+      if (!line || typeof line !== "string") {
+        continue;
+      }
       const match = line.match(/claim number\s*:\s*([A-Za-z0-9][A-Za-z0-9:-]*)/i);
       if (match && match[1]) {
         const sanitized = sanitizeClaimNumber(match[1]);
@@ -727,7 +779,14 @@
     if (document.getElementById("MainContent_JobInfoHeader1_txt_FullAddress")) {
       return true;
     }
-    const bodyText = normalizeText(document.body ? document.body.innerText : "");
+    let bodyText = "";
+    try {
+      bodyText = normalizeText(
+        document.body ? (document.body.textContent || document.body.innerText || "") : ""
+      );
+    } catch (error) {
+      bodyText = "";
+    }
     return /project name:/i.test(bodyText) && /project id:/i.test(bodyText);
   }
 
@@ -1070,7 +1129,7 @@
 
     const exportButton = document.createElement("button");
     exportButton.type = "button";
-    exportButton.textContent = "Export JSON";
+    exportButton.textContent = "JSON";
     if (hintsApi && hintsApi.applyButtonHint) {
       hintsApi.applyButtonHint(exportButton, "workcenterExportJson");
     }
@@ -1080,7 +1139,7 @@
 
     const copyPlainButton = document.createElement("button");
     copyPlainButton.type = "button";
-    copyPlainButton.textContent = "Copy as normal text";
+    copyPlainButton.textContent = "Copy text";
     if (hintsApi && hintsApi.applyButtonHint) {
       hintsApi.applyButtonHint(copyPlainButton, "workcenterCopyPlain");
     }
@@ -1090,7 +1149,7 @@
 
     const autofillButton = document.createElement("button");
     autofillButton.type = "button";
-    autofillButton.textContent = "Open job import";
+    autofillButton.textContent = "Import job";
     autofillButton.className = "servpro-btn";
     autofillButton.style.display = "none";
     if (hintsApi && hintsApi.applyButtonHint) {

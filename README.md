@@ -68,9 +68,9 @@ Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-base
    - `Scrape WorkCenter` reads General form fields (claim, address, notes, job ID) plus header when present (see `examples/workcenter-field.html`) and saves JSON to extension storage.
    - Expand **Show payload JSON** to review or edit values, then `Save payload`.
    - `Copy JSON` (in the JSON panel) copies the current editor text.
-   - `Export JSON` downloads the current editor text as a `.json` file.
-   - `Copy as normal text` copies a readable job summary (same as Alacrity capture; always visible on the toolbar).
-   - `Autofill TeamAllenssm` saves the current payload and opens TeamAllen (jobs list + Add Job popup by default, or the full add page if configured).
+   - `JSON` downloads the current editor text as a `.json` file.
+   - `Copy text` copies a readable job summary (always visible on the toolbar).
+   - `Import job` saves the current payload and opens TeamAllen (jobs list + Add Job popup by default, or the full add page if configured).
 3. On the TeamAllen add-job form (popup iframe or full page), use **TeamAllenssm Import Helper**:
    - Review or edit JSON, then click `Fill from WorkCenter payload`.
    - Choose a record from the last 5 scraped history entries if needed.
