@@ -100,6 +100,52 @@ body {
   display: none;
 }
 
+.sp-actions-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fnol-advanced-controls {
+  margin-top: 10px;
+}
+
+.fnol-advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fnol-advanced-checks {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.fnol-custom-fields-editor {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.fnol-custom-field-row {
+  border: 1px solid var(--sp-border, #c9d2cb);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--sp-surface-2, transparent);
+}
+
+.fnol-custom-field-row .sp-field {
+  margin-bottom: 8px;
+}
+
+.fnol-custom-field-row .sp-actions {
+  margin-top: 4px;
+}
+
 @keyframes sp-highlight-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(27, 67, 50, 0.4); }
   70%  { box-shadow: 0 0 0 8px rgba(27, 67, 50, 0); }

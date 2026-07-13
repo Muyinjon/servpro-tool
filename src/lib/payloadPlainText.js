@@ -125,6 +125,25 @@
     ].filter(Boolean);
   }
 
+  function formatExtraSection(payload) {
+    const lines = [];
+
+    if (Array.isArray(payload.fnolCustomFields)) {
+      payload.fnolCustomFields.forEach(function eachCustom(item) {
+        if (!item) {
+          return;
+        }
+        lines.push(line(item.label || item.key, item.value));
+      });
+    } else if (payload.custom && typeof payload.custom === "object") {
+      Object.keys(payload.custom).forEach(function eachKey(key) {
+        lines.push(line(key, payload.custom[key]));
+      });
+    }
+
+    return section("Custom fields", lines);
+  }
+
   function formatPayloadAsPlainText(payload) {
     if (!payload || typeof payload !== "object") {
       return "";
@@ -136,13 +155,17 @@
       line("Phone 1", payload.primaryPhone || payload.phone1),
       line("Phone 2", payload.secondaryPhone || payload.phone2),
       line("Email", payload.email || payload.EMail),
+      line("Secondary email", payload.secondaryEmail),
       line("Property type", payload.propertyType),
       line("Pay type", payload.payType),
       line("Bus. unit", payload.businessUnit),
       line("Loss type", payload.lossType || payload.LossType),
       line("Job status", payload.jobStatus),
       line("Coordinator", payload.coordinator),
-      line("Date of loss", payload.dateOfLoss)
+      line("Project manager", payload.projectManager),
+      line("Recon manager", payload.reconManager),
+      line("Date of loss", payload.dateOfLoss),
+      line("Cause of loss", payload.causeOfLoss)
     ]);
 
     const a1 = normalizeText(payload.address1 || payload.Address1 || payload.address);
@@ -152,7 +175,12 @@
     const zip = normalizeText(payload.zip || payload.Zip);
     const stateZip = [state, zip].filter(Boolean).join(" ");
     const cityStateZip = [city, stateZip].filter(Boolean).join(", ");
-    const addressLines = [a1, a2, cityStateZip].filter(Boolean);
+    const addressLines = [
+      a1,
+      a2,
+      cityStateZip,
+      line("Year built", payload.yearBuilt)
+    ].filter(Boolean);
     const address = addressLines.length ? section("Address", addressLines) : "";
 
     const insurance = section("Insurance & adjuster", [
@@ -167,19 +195,20 @@
 
     const notesText = normalizeText(payload.notes || payload.notesUser);
     const notes = notesText ? section("Notes", [notesText]) : "";
+    const extras = formatExtraSection(payload);
 
     const isAlacrity =
       payload.source === "alacrity" ||
       (payload.claim && payload.loss && payload.insured);
 
     if (isAlacrity) {
-      return [basic, address, insurance, notes, formatAlacritySections(payload)]
+      return [basic, address, insurance, extras, notes, formatAlacritySections(payload)]
         .flat()
         .filter(Boolean)
         .join("\n\n");
     }
 
-    return [basic, address, insurance, notes].filter(Boolean).join("\n\n");
+    return [basic, address, insurance, extras, notes].filter(Boolean).join("\n\n");
   }
 
   root.payloadPlainText = {

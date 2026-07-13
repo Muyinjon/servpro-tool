@@ -29,6 +29,71 @@
           </div>
           <p id="fnolJobEmpty" class="fnol-job-empty">No jobs yet — submit to save one here.</p>
           <ul id="fnolJobList" class="fnol-job-list" hidden></ul>
+
+          <div id="fnolAdvancedPanel" class="fnol-advanced-panel" hidden>
+            <button
+              type="button"
+              id="fnolAdvancedToggleBtn"
+              class="fnol-advanced-toggle"
+              aria-expanded="false"
+            >
+              <span>Advanced customize</span>
+              <span class="fnol-advanced-chevron" aria-hidden="true"></span>
+            </button>
+            <div id="fnolAdvancedBody" class="fnol-advanced-body" hidden>
+              <p class="hint">
+                Changes apply to the form on the right immediately. Copy text / JSON include extras.
+              </p>
+              <div class="field field-check">
+                <input type="checkbox" id="fnolPageAdvancedEnabled" />
+                <label for="fnolPageAdvancedEnabled">Enable Advanced FNOL</label>
+              </div>
+
+              <div id="fnolPageAdvancedControls" hidden>
+                <div class="field">
+                  <label for="fnolPageNotesMaxLength">Notes max (500–2000)</label>
+                  <input
+                    id="fnolPageNotesMaxLength"
+                    type="number"
+                    min="500"
+                    max="2000"
+                    step="50"
+                  />
+                </div>
+
+                <p class="fnol-advanced-heading">Presets</p>
+                <div class="field">
+                  <label for="fnolPageActivePresetId">Active preset</label>
+                  <select id="fnolPageActivePresetId"></select>
+                </div>
+                <div class="field">
+                  <label for="fnolPagePresetName">Preset name</label>
+                  <input id="fnolPagePresetName" type="text" maxlength="80" autocomplete="off" />
+                </div>
+                <div class="fnol-advanced-actions">
+                  <button type="button" id="fnolPagePresetDuplicateBtn" class="btn secondary sm">
+                    Duplicate
+                  </button>
+                  <button type="button" id="fnolPagePresetDeleteBtn" class="btn secondary sm">
+                    Delete
+                  </button>
+                </div>
+
+                <p class="fnol-advanced-heading">Defaults</p>
+                <p class="hint">Fill blank fields only.</p>
+                <div id="fnolPageDefaultsGrid" class="fnol-advanced-grid"></div>
+
+                <p class="fnol-advanced-heading">Show on form</p>
+                <div id="fnolPageVisibleFields" class="fnol-advanced-checks"></div>
+
+                <p class="fnol-advanced-heading">Custom fields</p>
+                <div id="fnolPageCustomFieldsEditor" class="fnol-custom-fields-editor"></div>
+                <button type="button" id="fnolPageCustomFieldAddBtn" class="btn secondary sm">
+                  Add custom field
+                </button>
+              </div>
+            </div>
+          </div>
         </aside>
 
         <main id="fnolFormPanel" class="fnol-panel fnol-form-panel">
@@ -241,6 +306,16 @@
                 </div>
               </fieldset>
 
+              <fieldset id="fnolOptionalSection" class="fnol-section fnol-section-optional" hidden>
+                <legend>Additional details</legend>
+                <div id="fnolOptionalFields" class="fnol-grid"></div>
+              </fieldset>
+
+              <fieldset id="fnolCustomSection" class="fnol-section fnol-section-custom" hidden>
+                <legend>Custom fields</legend>
+                <div id="fnolCustomFields" class="fnol-grid"></div>
+              </fieldset>
+
               <fieldset class="fnol-section fnol-section-notes">
                 <legend>Notes</legend>
                 <div class="field field-notes">
@@ -252,7 +327,7 @@
                     maxlength="500"
                   ></textarea>
                   <p id="fnolNotesCounter" class="fnol-notes-counter" aria-live="polite">0 / 500</p>
-                  <p class="hint">Adjuster details are appended to notes on submit (500 character limit on the job site).</p>
+                  <p id="fnolNotesHint" class="hint">Adjuster details are appended to notes on submit (500 character limit on the job site).</p>
                 </div>
               </fieldset>
             </div>
@@ -289,6 +364,7 @@
       </div>
     </div>
 
+    <script src="src/lib/fnolFieldCatalog.js"></script>
     <script src="src/lib/settings.js"></script>
     <script src="src/lib/tenantRegistry.js"></script>
     <script src="src/ui/theme.js"></script>

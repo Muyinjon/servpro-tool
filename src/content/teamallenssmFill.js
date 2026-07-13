@@ -1048,6 +1048,10 @@
       lossType: firstNonEmpty([payload.lossType, payload.LossType]),
       coordinator: firstNonEmpty([payload.coordinator, payload.Coordinator]),
       coordinatorValue: firstNonEmpty([payload.coordinatorValue, payload.CoordinatorValue]),
+      projectManager: firstNonEmpty([payload.projectManager, payload.ProjectManager, payload.projMgr]),
+      projectManagerValue: firstNonEmpty([payload.projectManagerValue, payload.ProjectManagerValue]),
+      reconManager: firstNonEmpty([payload.reconManager, payload.ReconManager]),
+      reconManagerValue: firstNonEmpty([payload.reconManagerValue, payload.ReconManagerValue]),
       jobStatus: firstNonEmpty([payload.jobStatus, payload.JobStatus]),
       addLocation: firstNonEmpty([
         payload.addLocation,
@@ -1174,6 +1178,7 @@
     "insuranceCarrier",
     "lossType",
     "coordinator",
+    "projectManager",
     "reconManager",
     "addLocation",
     "jobStatus"
@@ -1378,6 +1383,12 @@
       insuranceCarrier: source.insuranceCarrier,
       lossType: mapLossTypeForTeamAllen ? mapLossTypeForTeamAllen(source.lossType) : source.lossType,
       coordinator: mapCoordinatorForTeamAllen ? mapCoordinatorForTeamAllen(source.coordinator) : source.coordinator,
+      projectManager: mapCoordinatorForTeamAllen
+        ? mapCoordinatorForTeamAllen(source.projectManager)
+        : source.projectManager,
+      reconManager: mapCoordinatorForTeamAllen
+        ? mapCoordinatorForTeamAllen(source.reconManager)
+        : source.reconManager,
       addLocation: source.addLocation,
       jobStatus: source.jobStatus
     };
@@ -1386,7 +1397,8 @@
 
     const selectOptionValues = {
       coordinator: source.coordinatorValue || selectFieldValues.coordinatorValue,
-      reconManager: selectFieldValues.reconManagerValue,
+      projectManager: source.projectManagerValue || selectFieldValues.projectManagerValue,
+      reconManager: source.reconManagerValue || selectFieldValues.reconManagerValue,
       lossType: selectFieldValues.lossTypeValue || payload.lossTypeValue,
       jobStatus: source.jobStatus
     };

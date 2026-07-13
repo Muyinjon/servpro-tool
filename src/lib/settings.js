@@ -42,6 +42,10 @@
     fnolDefaultPayType: "",
     fnolDefaultBusinessUnit: "",
     fnolDefaultJobStatus: "",
+    fnolAdvancedEnabled: false,
+    fnolActivePresetId: "default",
+    fnolNotesMaxLength: 500,
+    fnolPresets: [],
     fnolClearAfterSubmit: false,
     fnolCopyOnSubmit: false,
     fnolIntakeInitials: "",
@@ -180,6 +184,32 @@
       merged.trialStartedAt = null;
     }
 
+    merged.fnolAdvancedEnabled = isTruthyFlag(merged.fnolAdvancedEnabled);
+    const catalog = root.fnolFieldCatalog;
+    if (catalog && catalog.normalizePresets && catalog.normalizeNotesMaxLength) {
+      merged.fnolPresets = catalog.normalizePresets(merged.fnolPresets, merged);
+      merged.fnolNotesMaxLength = catalog.normalizeNotesMaxLength(merged.fnolNotesMaxLength);
+      const activeId = String(merged.fnolActivePresetId || "").trim();
+      const hasActive = merged.fnolPresets.some(function hasId(p) {
+        return p && p.id === activeId;
+      });
+      merged.fnolActivePresetId = hasActive
+        ? activeId
+        : (merged.fnolPresets[0] && merged.fnolPresets[0].id) || "default";
+    } else {
+      if (!Array.isArray(merged.fnolPresets)) {
+        merged.fnolPresets = [];
+      }
+      const notesMax = Number(merged.fnolNotesMaxLength);
+      merged.fnolNotesMaxLength =
+        Number.isFinite(notesMax) && notesMax >= 500
+          ? Math.min(2000, Math.floor(notesMax))
+          : 500;
+      if (!String(merged.fnolActivePresetId || "").trim()) {
+        merged.fnolActivePresetId = "default";
+      }
+    }
+
     return merged;
   }
 
@@ -252,6 +282,43 @@
     }
     const merged = mergeSettings(settings);
     return merged.fnolGoogleFormBackup !== false;
+  }
+
+  function canUseAdvancedFnol(settings) {
+    if (!isTeamAllenActivated(settings)) {
+      return false;
+    }
+    const tier = getActivationTier(settings);
+    const registry = root.tenantRegistry;
+    const profile = registry && registry.getTenantProfile
+      ? registry.getTenantProfile(tier)
+      : null;
+    if (profile && profile.features && profile.features.advancedFnol === false) {
+      return false;
+    }
+    const merged = mergeSettings(settings);
+    return merged.fnolAdvancedEnabled === true;
+  }
+
+  function getEffectiveFnolNotesMaxLength(settings) {
+    const catalog = root.fnolFieldCatalog;
+    const merged = mergeSettings(settings);
+    const advanced = canUseAdvancedFnol(merged);
+    if (catalog && catalog.resolveNotesMaxLength) {
+      return catalog.resolveNotesMaxLength(merged, advanced);
+    }
+    return advanced
+      ? Math.min(2000, Math.max(500, Number(merged.fnolNotesMaxLength) || 500))
+      : 500;
+  }
+
+  function getActiveFnolPreset(settings) {
+    const catalog = root.fnolFieldCatalog;
+    const merged = mergeSettings(settings);
+    if (catalog && catalog.getActivePreset) {
+      return catalog.getActivePreset(merged);
+    }
+    return null;
   }
 
   function getTenantProfile(tier) {
@@ -513,6 +580,9 @@
     isFnolLocked,
     isTrialExpiredTier,
     canUseGoogleFormBackup,
+    canUseAdvancedFnol,
+    getEffectiveFnolNotesMaxLength,
+    getActiveFnolPreset,
     getTenantProfile,
     getTrialDaysRemaining,
     getSubmitHandler,

@@ -5,6 +5,7 @@
   }
 
   const selectorsApi = window.ServproUploadExtension && window.ServproUploadExtension.selectors;
+  const catalogApi = window.ServproUploadExtension && window.ServproUploadExtension.fnolFieldCatalog;
   const fnolNotesApi = window.ServproUploadExtension && window.ServproUploadExtension.fnolNotes;
   const plainTextApi = window.ServproUploadExtension && window.ServproUploadExtension.payloadPlainText;
   const googleFormApi =
@@ -47,7 +48,33 @@
   const fnolStatus = document.getElementById("fnolStatus");
   const fnolNotesInput = document.getElementById("fnolNotes");
   const fnolNotesCounter = document.getElementById("fnolNotesCounter");
-  const NOTES_MAX_LENGTH = fnolNotesApi ? fnolNotesApi.NOTES_MAX_LENGTH : 500;
+  const fnolNotesHint = document.getElementById("fnolNotesHint");
+  const fnolOptionalSection = document.getElementById("fnolOptionalSection");
+  const fnolOptionalFields = document.getElementById("fnolOptionalFields");
+  const fnolCustomSection = document.getElementById("fnolCustomSection");
+  const fnolCustomFields = document.getElementById("fnolCustomFields");
+  const fnolAdvancedPanel = document.getElementById("fnolAdvancedPanel");
+  const fnolAdvancedToggleBtn = document.getElementById("fnolAdvancedToggleBtn");
+  const fnolAdvancedBody = document.getElementById("fnolAdvancedBody");
+  const fnolPageAdvancedEnabled = document.getElementById("fnolPageAdvancedEnabled");
+  const fnolPageAdvancedControls = document.getElementById("fnolPageAdvancedControls");
+  const fnolPageNotesMaxLength = document.getElementById("fnolPageNotesMaxLength");
+  const fnolPageActivePresetId = document.getElementById("fnolPageActivePresetId");
+  const fnolPagePresetName = document.getElementById("fnolPagePresetName");
+  const fnolPagePresetDuplicateBtn = document.getElementById("fnolPagePresetDuplicateBtn");
+  const fnolPagePresetDeleteBtn = document.getElementById("fnolPagePresetDeleteBtn");
+  const fnolPageDefaultsGrid = document.getElementById("fnolPageDefaultsGrid");
+  const fnolPageVisibleFields = document.getElementById("fnolPageVisibleFields");
+  const fnolPageCustomFieldsEditor = document.getElementById("fnolPageCustomFieldsEditor");
+  const fnolPageCustomFieldAddBtn = document.getElementById("fnolPageCustomFieldAddBtn");
+  let effectiveNotesMax =
+    fnolNotesApi && fnolNotesApi.NOTES_MAX_LENGTH ? fnolNotesApi.NOTES_MAX_LENGTH : 500;
+  let advUiReady = false;
+  let suppressAdvReload = false;
+  let workingPresets = [];
+  let workingActivePresetId = "default";
+  let workingNotesMax = 500;
+  let workingAdvancedEnabled = false;
 
   const fieldsApi = window.ServproUploadExtension && window.ServproUploadExtension.workcenterFields;
   const fnolAddressLookupPanel = document.getElementById("fnolAddressLookupPanel");
@@ -355,10 +382,12 @@
     if (settings) {
       updateSubmitButtonLabel(settings);
       updateAddressLookupVisibility(settings);
+      updateAdvancedPanelVisibility(settings);
     } else {
       settingsApi.getSettings(function onLoadedForLabel(s) {
         updateSubmitButtonLabel(s);
         updateTrialUpsell(s);
+        updateAdvancedPanelVisibility(s);
       });
     }
   }
@@ -479,7 +508,15 @@
       "claimNumber",
       "adjusterName",
       "adjusterPhone",
-      "adjusterEmail"
+      "adjusterEmail",
+      "projectManager",
+      "reconManager",
+      "yearBuilt",
+      "policyNumber",
+      "deductible",
+      "secondaryEmail",
+      "causeOfLoss",
+      "dateOfLoss"
     ];
     fields.forEach(function eachName(name) {
       const el = fnolForm.elements.namedItem(name);
@@ -508,6 +545,24 @@
     if (notesEl) {
       notesEl.value = payload.notesUser || payload.notes || "";
     }
+    if (Array.isArray(payload.fnolCustomFields)) {
+      payload.fnolCustomFields.forEach(function eachCustom(item) {
+        if (!item || !item.key) {
+          return;
+        }
+        const el = fnolForm.elements.namedItem(item.key);
+        if (el && item.value != null) {
+          el.value = item.value;
+        }
+      });
+    } else if (payload.custom && typeof payload.custom === "object") {
+      Object.keys(payload.custom).forEach(function eachKey(key) {
+        const el = fnolForm.elements.namedItem(key);
+        if (el) {
+          el.value = payload.custom[key];
+        }
+      });
+    }
     updateFnolNotesCounter();
   }
 
@@ -520,12 +575,23 @@
     };
   }
 
+  function readSelectLabelAndValue(name) {
+    const el = fnolForm && fnolForm.elements.namedItem(name);
+    if (!el || el.tagName !== "SELECT") {
+      return { label: "", value: "" };
+    }
+    const opt = el.options[el.selectedIndex];
+    return {
+      value: String(el.value || "").trim(),
+      label: opt ? String(opt.textContent || "").trim() : ""
+    };
+  }
+
   function buildFnolPayload(options) {
     const opts = options || {};
     const data = new FormData(fnolForm);
-    const lossOption = fnolLossType && fnolLossType.options[fnolLossType.selectedIndex];
-    const lossTypeValue = lossOption ? String(lossOption.value || "").trim() : "";
-    const lossTypeLabel = lossOption ? String(lossOption.textContent || "").trim() : "";
+    const loss = readSelectLabelAndValue("lossType");
+    const coordinator = readSelectLabelAndValue("coordinator");
     const notesUser = String(data.get("notesUser") || "").trim();
     const adjuster = readFnolFormAdjuster();
     const mergedNotes = fnolNotesApi
@@ -541,8 +607,8 @@
       claimNumber: String(data.get("claimNumber") || "").trim(),
       propertyType: String(data.get("propertyType") || "").trim(),
       payType: String(data.get("payType") || "").trim(),
-      lossType: lossTypeLabel,
-      lossTypeValue: lossTypeValue,
+      lossType: loss.label || loss.value,
+      lossTypeValue: loss.value,
       businessUnit: String(data.get("businessUnit") || "").trim(),
       address1: String(data.get("address1") || "").trim(),
       address2: String(data.get("address2") || "").trim(),
@@ -551,14 +617,8 @@
       zip: String(data.get("zip") || "").trim(),
       insuranceCarrier: String(data.get("insuranceCarrier") || "").trim(),
       jobStatus: String(data.get("jobStatus") || "").trim(),
-      coordinator: String(data.get("coordinator") || "").trim(),
-      coordinatorValue: (function resolveCoordinatorValue() {
-        const el = fnolForm && fnolForm.elements.namedItem("coordinator");
-        if (el && el.tagName === "SELECT") {
-          return String(el.value || "").trim();
-        }
-        return "";
-      })(),
+      coordinator: coordinator.label || coordinator.value,
+      coordinatorValue: coordinator.value,
       adjusterName: adjuster.adjusterName,
       adjusterPhone: adjuster.adjusterPhone,
       adjusterEmail: adjuster.adjusterEmail,
@@ -570,6 +630,54 @@
       sourceUrl: "fnol://local",
       scrapedAt: new Date().toISOString()
     };
+
+    const optionalKeys = [
+      "projectManager",
+      "reconManager",
+      "yearBuilt",
+      "policyNumber",
+      "deductible",
+      "secondaryEmail",
+      "causeOfLoss",
+      "dateOfLoss"
+    ];
+    optionalKeys.forEach(function eachOptional(key) {
+      const el = fnolForm.elements.namedItem(key);
+      if (!el) {
+        return;
+      }
+      const value = String(data.get(key) || "").trim();
+      if (value) {
+        payload[key] = value;
+      }
+    });
+
+    const customMeta = [];
+    const customMap = {};
+    if (fnolCustomFields) {
+      Array.prototype.forEach.call(
+        fnolCustomFields.querySelectorAll("[data-custom-key]"),
+        function eachCustom(input) {
+          const key = input.getAttribute("data-custom-key");
+          const label = input.getAttribute("data-custom-label") || key;
+          if (!key) {
+            return;
+          }
+          const value = String(input.value || "").trim();
+          if (!value) {
+            return;
+          }
+          customMap[key] = value;
+          payload[key] = value;
+          customMeta.push({ key: key, label: label, value: value });
+        }
+      );
+    }
+    if (customMeta.length) {
+      payload.custom = customMap;
+      payload.fnolCustomFields = customMeta;
+    }
+
     if (payload.propertyType) {
       const isCommercial = payload.propertyType.indexOf("Commercial") !== -1;
       payload.addLocation = isCommercial ? "Commercial" : "Residence";
@@ -762,11 +870,23 @@
         state: importPayload.state,
         zip: importPayload.zip,
         insuranceCarrier: importPayload.insuranceCarrier,
+        jobStatus: importPayload.jobStatus,
         coordinator: importPayload.coordinator,
+        coordinatorValue: importPayload.coordinatorValue,
+        projectManager: importPayload.projectManager,
+        reconManager: importPayload.reconManager,
+        yearBuilt: importPayload.yearBuilt,
+        policyNumber: importPayload.policyNumber,
+        deductible: importPayload.deductible,
+        secondaryEmail: importPayload.secondaryEmail,
+        causeOfLoss: importPayload.causeOfLoss,
+        dateOfLoss: importPayload.dateOfLoss,
         adjusterName: importPayload.adjusterName,
         adjusterPhone: importPayload.adjusterPhone,
         adjusterEmail: importPayload.adjusterEmail,
-        notesUser: importPayload.notesUser
+        notesUser: importPayload.notesUser,
+        custom: importPayload.custom,
+        fnolCustomFields: importPayload.fnolCustomFields
       }
     };
     chrome.storage.local.get([WORKCENTER_IMPORT.fnolRegistryKey], function onLoad(result) {
@@ -860,25 +980,194 @@
     fnolDefaultJobStatus: "jobStatus"
   };
 
-  function applyFnolDefaults(settings) {
+  function setFieldBlankOnly(fieldName, value) {
+    if (!fnolForm || !value) {
+      return;
+    }
+    const el = fnolForm.elements.namedItem(fieldName);
+    if (!el) {
+      return;
+    }
+    if (String(el.value || "").trim()) {
+      return;
+    }
+    if (fieldName === "lossType") {
+      setSelectByLabelOrValue(el, null, value);
+      if (!el.value) {
+        setSelectByLabelOrValue(el, value, null);
+      }
+      return;
+    }
+    el.value = value;
+    if (el.tagName === "SELECT" && el.value !== String(value)) {
+      setSelectByLabelOrValue(el, value, value);
+    }
+  }
+
+  function mountAdvancedFnolFields(settings) {
+    const advanced = settingsApi.canUseAdvancedFnol
+      ? settingsApi.canUseAdvancedFnol(settings)
+      : false;
+    if (!advanced || !catalogApi) {
+      if (fnolOptionalSection) {
+        fnolOptionalSection.hidden = true;
+      }
+      if (fnolCustomSection) {
+        fnolCustomSection.hidden = true;
+      }
+      if (fnolOptionalFields) {
+        fnolOptionalFields.innerHTML = "";
+      }
+      if (fnolCustomFields) {
+        fnolCustomFields.innerHTML = "";
+      }
+      return;
+    }
+
+    const preset = settingsApi.getActiveFnolPreset
+      ? settingsApi.getActiveFnolPreset(settings)
+      : catalogApi.getActivePreset(settings);
+    const visible = {};
+    ((preset && preset.visibleFields) || []).forEach(function mark(key) {
+      visible[key] = true;
+    });
+
+    if (fnolOptionalFields) {
+      const previousValues = {};
+      Array.prototype.forEach.call(
+        fnolOptionalFields.querySelectorAll("[name]"),
+        function eachExisting(el) {
+          previousValues[el.name] = el.value;
+        }
+      );
+      fnolOptionalFields.innerHTML = "";
+      let optionalCount = 0;
+      catalogApi.getOptionalFields().forEach(function eachField(field) {
+        if (!visible[field.key]) {
+          return;
+        }
+        optionalCount += 1;
+        const wrap = document.createElement("div");
+        wrap.className = "field";
+        const label = document.createElement("label");
+        const inputId = "fnolDyn_" + field.key;
+        label.setAttribute("for", inputId);
+        label.textContent = field.label;
+        const input = document.createElement("input");
+        input.id = inputId;
+        input.name = field.key;
+        input.type = field.control === "email" ? "email" : "text";
+        input.value = previousValues[field.key] || "";
+        wrap.appendChild(label);
+        wrap.appendChild(input);
+        fnolOptionalFields.appendChild(wrap);
+      });
+      if (fnolOptionalSection) {
+        fnolOptionalSection.hidden = optionalCount === 0;
+      }
+    }
+
+    if (fnolCustomFields) {
+      const previousCustom = {};
+      Array.prototype.forEach.call(
+        fnolCustomFields.querySelectorAll("[data-custom-key]"),
+        function eachExisting(el) {
+          previousCustom[el.getAttribute("data-custom-key")] = el.value;
+        }
+      );
+      fnolCustomFields.innerHTML = "";
+      const customs = (preset && preset.customFields) || [];
+      customs.forEach(function eachCustom(field) {
+        const wrap = document.createElement("div");
+        wrap.className = "field";
+        const label = document.createElement("label");
+        const inputId = "fnolCustom_" + field.id;
+        label.setAttribute("for", inputId);
+        label.textContent = field.label || field.key;
+        const input = document.createElement("input");
+        input.id = inputId;
+        input.name = field.key;
+        input.type = "text";
+        input.setAttribute("data-custom-key", field.key);
+        input.setAttribute("data-custom-label", field.label || field.key);
+        input.value =
+          previousCustom[field.key] != null && previousCustom[field.key] !== ""
+            ? previousCustom[field.key]
+            : field.defaultValue || "";
+        wrap.appendChild(label);
+        wrap.appendChild(input);
+        fnolCustomFields.appendChild(wrap);
+      });
+      if (fnolCustomSection) {
+        fnolCustomSection.hidden = customs.length === 0;
+      }
+    }
+  }
+
+  function applyNotesMaxFromSettings(settings) {
+    effectiveNotesMax = settingsApi.getEffectiveFnolNotesMaxLength
+      ? settingsApi.getEffectiveFnolNotesMaxLength(settings)
+      : 500;
+    if (fnolNotesInput) {
+      fnolNotesInput.maxLength = effectiveNotesMax;
+    }
+    if (fnolNotesHint) {
+      fnolNotesHint.textContent =
+        "Adjuster details are appended to notes on submit (" +
+        effectiveNotesMax +
+        " character limit).";
+    }
+    updateFnolNotesCounter();
+  }
+
+  function applyActiveFnolPreset(settings) {
     if (!fnolForm || !settings) {
       return;
     }
+    applyNotesMaxFromSettings(settings);
+    mountAdvancedFnolFields(settings);
+
+    const advanced = settingsApi.canUseAdvancedFnol
+      ? settingsApi.canUseAdvancedFnol(settings)
+      : false;
+
+    if (advanced && catalogApi) {
+      const preset = settingsApi.getActiveFnolPreset
+        ? settingsApi.getActiveFnolPreset(settings)
+        : catalogApi.getActivePreset(settings);
+      const defaults = (preset && preset.defaults) || {};
+      catalogApi.getDefaultableFields().forEach(function eachField(field) {
+        setFieldBlankOnly(field.key, defaults[field.key]);
+      });
+      catalogApi.getOptionalFields().forEach(function eachOptional(field) {
+        const defVal = defaults[field.key];
+        if (defVal) {
+          setFieldBlankOnly(field.key, defVal);
+        }
+      });
+      ((preset && preset.customFields) || []).forEach(function eachCustom(field) {
+        if (!field.defaultValue) {
+          return;
+        }
+        const el = fnolForm.elements.namedItem(field.key);
+        if (el && !String(el.value || "").trim()) {
+          el.value = field.defaultValue;
+        }
+      });
+      return;
+    }
+
     Object.keys(FNOL_DEFAULT_FIELD_MAP).forEach(function applyField(settingKey) {
       const defaultValue = settings[settingKey];
       if (!defaultValue) {
         return;
       }
-      const fieldName = FNOL_DEFAULT_FIELD_MAP[settingKey];
-      const el = fnolForm.elements.namedItem(fieldName);
-      if (!el) {
-        return;
-      }
-      // Only apply if the field is currently blank
-      if (!el.value) {
-        el.value = defaultValue;
-      }
+      setFieldBlankOnly(FNOL_DEFAULT_FIELD_MAP[settingKey], defaultValue);
     });
+  }
+
+  function applyFnolDefaults(settings) {
+    applyActiveFnolPreset(settings);
   }
 
   function refreshActivationState() {
@@ -897,7 +1186,13 @@
       }
       const settings = settingsApi.mergeSettings(changes[settingsApi.SETTINGS_KEY].newValue);
       setActivated(settingsApi.isFnolAccessible(settings), null, settings);
+      if (settingsApi.isFnolAccessible(settings)) {
+        applyFnolDefaults(settings);
+      }
       updateAddressLookupVisibility(settings);
+      if (!suppressAdvReload) {
+        updateAdvancedPanelVisibility(settings);
+      }
     });
   }
 
@@ -928,9 +1223,9 @@
     const userLen = fnolNotesInput ? String(fnolNotesInput.value || "").length : 0;
     const previewPayload = buildFnolPayload({ previewNotes: true });
     const mergedLen = String((previewPayload && previewPayload.notes) || "").length;
-    const over = mergedLen > NOTES_MAX_LENGTH;
+    const over = mergedLen > effectiveNotesMax;
     fnolNotesCounter.textContent =
-      mergedLen + " / " + NOTES_MAX_LENGTH + (userLen !== mergedLen ? " (with adjuster backup)" : "");
+      mergedLen + " / " + effectiveNotesMax + (userLen !== mergedLen ? " (with adjuster backup)" : "");
     fnolNotesCounter.classList.toggle("is-over", over);
   }
 
@@ -1131,9 +1426,9 @@
       }
 
       const notesLen = String(payload.notes || "").length;
-      if (notesLen > NOTES_MAX_LENGTH) {
+      if (notesLen > effectiveNotesMax) {
         setStatus(
-          "Notes are " + notesLen + " characters (max " + NOTES_MAX_LENGTH + "). Shorten notes before submitting.",
+          "Notes are " + notesLen + " characters (max " + effectiveNotesMax + "). Shorten notes before submitting.",
           "error"
         );
         updateFnolNotesCounter();
@@ -1274,4 +1569,444 @@
       });
     });
   });
+
+  // ── Advanced FNOL live customize (TeamAllen) ───────────────────────────────
+  function updateAdvancedPanelVisibility(settings) {
+    const isTeamAllen = settingsApi.isTeamAllenActivated
+      ? settingsApi.isTeamAllenActivated(settings)
+      : false;
+    if (fnolAdvancedPanel) {
+      fnolAdvancedPanel.hidden = !isTeamAllen;
+    }
+    if (!isTeamAllen) {
+      return;
+    }
+    if (!advUiReady) {
+      initAdvancedCustomizeUi();
+    }
+    syncAdvancedPanelFromSettings(settings || settingsApi.mergeSettings(null));
+  }
+
+  function getWorkingActivePreset() {
+    for (let i = 0; i < workingPresets.length; i += 1) {
+      if (workingPresets[i].id === workingActivePresetId) {
+        return workingPresets[i];
+      }
+    }
+    return workingPresets[0] || null;
+  }
+
+  function buildAdvancedSettingsPatch(baseSettings) {
+    const base = settingsApi.mergeSettings(baseSettings || null);
+    if (!catalogApi) {
+      return {
+        fnolAdvancedEnabled: workingAdvancedEnabled,
+        fnolNotesMaxLength: workingNotesMax,
+        fnolPresets: workingPresets,
+        fnolActivePresetId: workingActivePresetId
+      };
+    }
+    const presets = catalogApi.normalizePresets(workingPresets, base);
+    const active = presets.some(function has(p) {
+      return p.id === workingActivePresetId;
+    })
+      ? workingActivePresetId
+      : (presets[0] && presets[0].id) || "default";
+    const activePreset = presets.filter(function find(p) {
+      return p.id === active;
+    })[0];
+    const legacy = activePreset ? catalogApi.syncLegacyDefaultsFromPreset(activePreset) : {};
+    return Object.assign(
+      {
+        fnolAdvancedEnabled: workingAdvancedEnabled,
+        fnolNotesMaxLength: catalogApi.normalizeNotesMaxLength(workingNotesMax),
+        fnolPresets: presets,
+        fnolActivePresetId: active
+      },
+      legacy
+    );
+  }
+
+  function saveAdvancedAndPreview() {
+    if (!catalogApi) {
+      return;
+    }
+    settingsApi.getSettings(function onLoaded(current) {
+      if (!settingsApi.isTeamAllenActivated(current)) {
+        return;
+      }
+      const patch = buildAdvancedSettingsPatch(current);
+      const preview = settingsApi.mergeSettings(Object.assign({}, current, patch));
+      suppressAdvReload = true;
+      applyActiveFnolPreset(preview);
+      refreshAdvancedControls();
+      settingsApi.saveSettings(patch, function onSaved() {
+        setTimeout(function release() {
+          suppressAdvReload = false;
+        }, 150);
+      });
+    });
+  }
+
+  function ensureAdvancedBuilders() {
+    if (advUiReady || !catalogApi) {
+      return;
+    }
+    advUiReady = true;
+
+    if (fnolPageDefaultsGrid) {
+      fnolPageDefaultsGrid.innerHTML = "";
+      catalogApi.getDefaultableFields().forEach(function eachField(field) {
+        const wrap = document.createElement("div");
+        wrap.className = "field";
+        const label = document.createElement("label");
+        const selectId = "fnolPageAdvDefault_" + field.key;
+        label.setAttribute("for", selectId);
+        label.textContent = field.label;
+        const select = document.createElement("select");
+        select.id = selectId;
+        select.setAttribute("data-adv-default-key", field.key);
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "—";
+        select.appendChild(empty);
+        (field.options || []).forEach(function eachOpt(opt) {
+          const option = document.createElement("option");
+          option.value = opt.value;
+          option.textContent = opt.label;
+          select.appendChild(option);
+        });
+        select.addEventListener("change", function onDefaultChange() {
+          const preset = getWorkingActivePreset();
+          if (!preset) {
+            return;
+          }
+          preset.defaults[field.key] = select.value || "";
+          saveAdvancedAndPreview();
+        });
+        wrap.appendChild(label);
+        wrap.appendChild(select);
+        fnolPageDefaultsGrid.appendChild(wrap);
+      });
+    }
+
+    if (fnolPageVisibleFields) {
+      fnolPageVisibleFields.innerHTML = "";
+      catalogApi.getOptionalFields().forEach(function eachField(field) {
+        const row = document.createElement("div");
+        row.className = "field field-check";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = "fnolPageAdvVisible_" + field.key;
+        checkbox.setAttribute("data-adv-visible-key", field.key);
+        const label = document.createElement("label");
+        label.setAttribute("for", checkbox.id);
+        label.textContent = field.label;
+        checkbox.addEventListener("change", function onVisibleChange() {
+          const preset = getWorkingActivePreset();
+          if (!preset) {
+            return;
+          }
+          const key = field.key;
+          const next = (preset.visibleFields || []).filter(function keep(k) {
+            return k !== key;
+          });
+          if (checkbox.checked) {
+            next.push(key);
+          }
+          preset.visibleFields = next;
+          saveAdvancedAndPreview();
+        });
+        row.appendChild(checkbox);
+        row.appendChild(label);
+        fnolPageVisibleFields.appendChild(row);
+      });
+    }
+  }
+
+  function renderPageCustomFieldsEditor() {
+    if (!fnolPageCustomFieldsEditor || !catalogApi) {
+      return;
+    }
+    const preset = getWorkingActivePreset();
+    fnolPageCustomFieldsEditor.innerHTML = "";
+    if (!preset) {
+      return;
+    }
+    (preset.customFields || []).forEach(function eachCustom(field) {
+      const row = document.createElement("div");
+      row.className = "fnol-custom-field-row";
+
+      function makeField(idSuffix, labelText, value, onChange) {
+        const wrap = document.createElement("div");
+        wrap.className = "field";
+        const label = document.createElement("label");
+        const id = "fnolPageCustom_" + field.id + "_" + idSuffix;
+        label.setAttribute("for", id);
+        label.textContent = labelText;
+        const input = document.createElement("input");
+        input.id = id;
+        input.type = "text";
+        input.value = value || "";
+        input.addEventListener("change", onChange);
+        input.addEventListener("blur", onChange);
+        wrap.appendChild(label);
+        wrap.appendChild(input);
+        return wrap;
+      }
+
+      row.appendChild(
+        makeField("label", "Label", field.label, function onLabel(e) {
+          field.label = String(e.target.value || "").trim() || field.label;
+          if (!field.key || String(field.key).indexOf("custom_field_") === 0) {
+            field.key = catalogApi.sanitizeCustomFieldKey(field.label) || field.key;
+            const keyInput = row.querySelector('input[id$="_key"]');
+            if (keyInput) {
+              keyInput.value = field.key;
+            }
+          }
+          saveAdvancedAndPreview();
+        })
+      );
+      row.appendChild(
+        makeField("key", "Key", field.key, function onKey(e) {
+          field.key =
+            catalogApi.sanitizeCustomFieldKey(e.target.value) ||
+            catalogApi.sanitizeCustomFieldKey(field.label) ||
+            field.key;
+          e.target.value = field.key;
+          saveAdvancedAndPreview();
+        })
+      );
+      row.appendChild(
+        makeField("default", "Default", field.defaultValue, function onDefault(e) {
+          field.defaultValue = String(e.target.value || "");
+          saveAdvancedAndPreview();
+        })
+      );
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn secondary sm";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", function onRemove() {
+        preset.customFields = (preset.customFields || []).filter(function keep(item) {
+          return item.id !== field.id;
+        });
+        renderPageCustomFieldsEditor();
+        saveAdvancedAndPreview();
+      });
+      row.appendChild(removeBtn);
+      fnolPageCustomFieldsEditor.appendChild(row);
+    });
+  }
+
+  function refreshAdvancedControls() {
+    ensureAdvancedBuilders();
+    if (!catalogApi) {
+      return;
+    }
+
+    if (fnolPageAdvancedEnabled) {
+      fnolPageAdvancedEnabled.checked = workingAdvancedEnabled;
+    }
+    if (fnolPageAdvancedControls) {
+      fnolPageAdvancedControls.hidden = !workingAdvancedEnabled;
+    }
+    if (fnolPageNotesMaxLength) {
+      fnolPageNotesMaxLength.value = String(
+        catalogApi.normalizeNotesMaxLength(workingNotesMax)
+      );
+    }
+    if (fnolPageActivePresetId) {
+      fnolPageActivePresetId.innerHTML = "";
+      workingPresets.forEach(function eachPreset(preset) {
+        const opt = document.createElement("option");
+        opt.value = preset.id;
+        opt.textContent = preset.name || preset.id;
+        fnolPageActivePresetId.appendChild(opt);
+      });
+      const stillThere = workingPresets.some(function has(p) {
+        return p.id === workingActivePresetId;
+      });
+      workingActivePresetId = stillThere
+        ? workingActivePresetId
+        : (workingPresets[0] && workingPresets[0].id) || "default";
+      fnolPageActivePresetId.value = workingActivePresetId;
+    }
+
+    const active = getWorkingActivePreset();
+    if (fnolPagePresetName) {
+      fnolPagePresetName.value = (active && active.name) || "";
+    }
+    if (fnolPageDefaultsGrid && active) {
+      Array.prototype.forEach.call(
+        fnolPageDefaultsGrid.querySelectorAll("[data-adv-default-key]"),
+        function eachSelect(select) {
+          const key = select.getAttribute("data-adv-default-key");
+          select.value = (active.defaults && active.defaults[key]) || "";
+        }
+      );
+    }
+    if (fnolPageVisibleFields && active) {
+      const visible = {};
+      (active.visibleFields || []).forEach(function mark(k) {
+        visible[k] = true;
+      });
+      Array.prototype.forEach.call(
+        fnolPageVisibleFields.querySelectorAll("[data-adv-visible-key]"),
+        function eachCheck(checkbox) {
+          const key = checkbox.getAttribute("data-adv-visible-key");
+          checkbox.checked = Boolean(visible[key]);
+        }
+      );
+    }
+    if (fnolPagePresetDeleteBtn) {
+      fnolPagePresetDeleteBtn.disabled = workingPresets.length <= 1;
+    }
+    renderPageCustomFieldsEditor();
+  }
+
+  function syncAdvancedPanelFromSettings(settings) {
+    if (!catalogApi || suppressAdvReload) {
+      return;
+    }
+    const migrated = catalogApi.migrateLegacyIntoActivePreset(settings);
+    workingPresets = catalogApi.normalizePresets(migrated.fnolPresets, migrated);
+    workingActivePresetId =
+      migrated.fnolActivePresetId || (workingPresets[0] && workingPresets[0].id) || "default";
+    workingNotesMax = catalogApi.normalizeNotesMaxLength(migrated.fnolNotesMaxLength);
+    workingAdvancedEnabled = Boolean(migrated.fnolAdvancedEnabled);
+    refreshAdvancedControls();
+  }
+
+  function initAdvancedCustomizeUi() {
+    if (!catalogApi || !fnolAdvancedPanel) {
+      return;
+    }
+    ensureAdvancedBuilders();
+
+    if (fnolAdvancedToggleBtn && fnolAdvancedBody) {
+      fnolAdvancedToggleBtn.addEventListener("click", function onToggle() {
+        const open = fnolAdvancedBody.hidden;
+        fnolAdvancedBody.hidden = !open;
+        fnolAdvancedToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        fnolAdvancedPanel.classList.toggle("is-open", open);
+      });
+    }
+
+    if (fnolPageAdvancedEnabled) {
+      fnolPageAdvancedEnabled.addEventListener("change", function onEnable() {
+        workingAdvancedEnabled = fnolPageAdvancedEnabled.checked;
+        if (workingAdvancedEnabled && catalogApi) {
+          settingsApi.getSettings(function onLoaded(current) {
+            const withLegacy = catalogApi.migrateLegacyIntoActivePreset(
+              Object.assign({}, current, {
+                fnolPresets: workingPresets,
+                fnolActivePresetId: workingActivePresetId
+              })
+            );
+            workingPresets = catalogApi.normalizePresets(withLegacy.fnolPresets, withLegacy);
+            workingActivePresetId = withLegacy.fnolActivePresetId;
+            saveAdvancedAndPreview();
+          });
+          return;
+        }
+        saveAdvancedAndPreview();
+      });
+    }
+
+    if (fnolPageNotesMaxLength) {
+      fnolPageNotesMaxLength.addEventListener("change", function onNotesMax() {
+        workingNotesMax = catalogApi.normalizeNotesMaxLength(fnolPageNotesMaxLength.value);
+        saveAdvancedAndPreview();
+      });
+    }
+
+    if (fnolPageActivePresetId) {
+      fnolPageActivePresetId.addEventListener("change", function onPreset() {
+        workingActivePresetId = fnolPageActivePresetId.value;
+        saveAdvancedAndPreview();
+      });
+    }
+
+    if (fnolPagePresetName) {
+      function commitName() {
+        const preset = getWorkingActivePreset();
+        if (!preset) {
+          return;
+        }
+        preset.name = String(fnolPagePresetName.value || "").trim() || preset.name;
+        saveAdvancedAndPreview();
+      }
+      fnolPagePresetName.addEventListener("change", commitName);
+      fnolPagePresetName.addEventListener("blur", commitName);
+    }
+
+    if (fnolPagePresetDuplicateBtn) {
+      fnolPagePresetDuplicateBtn.addEventListener("click", function onDup() {
+        const active = getWorkingActivePreset();
+        if (!active) {
+          return;
+        }
+        const copy = catalogApi.normalizePreset(
+          Object.assign({}, active, {
+            id: "preset-" + Date.now(),
+            name: (active.name || "Preset") + " copy"
+          }),
+          workingPresets.length
+        );
+        workingPresets.push(copy);
+        workingActivePresetId = copy.id;
+        saveAdvancedAndPreview();
+      });
+    }
+
+    if (fnolPagePresetDeleteBtn) {
+      fnolPagePresetDeleteBtn.addEventListener("click", function onDel() {
+        if (workingPresets.length <= 1) {
+          return;
+        }
+        workingPresets = workingPresets.filter(function keep(p) {
+          return p.id !== workingActivePresetId;
+        });
+        workingActivePresetId = workingPresets[0].id;
+        saveAdvancedAndPreview();
+      });
+    }
+
+    if (fnolPageCustomFieldAddBtn) {
+      fnolPageCustomFieldAddBtn.addEventListener("click", function onAdd() {
+        const preset = getWorkingActivePreset();
+        if (!preset) {
+          return;
+        }
+        const index = (preset.customFields || []).length;
+        preset.customFields = (preset.customFields || []).concat([
+          catalogApi.normalizeCustomField(
+            {
+              label: "Custom field " + (index + 1),
+              key: "custom_field_" + (index + 1),
+              defaultValue: ""
+            },
+            index
+          )
+        ]);
+        renderPageCustomFieldsEditor();
+        saveAdvancedAndPreview();
+      });
+    }
+
+    if (window.location.hash === "#advanced" && fnolAdvancedBody && fnolAdvancedToggleBtn) {
+      fnolAdvancedBody.hidden = false;
+      fnolAdvancedToggleBtn.setAttribute("aria-expanded", "true");
+      fnolAdvancedPanel.classList.add("is-open");
+      try {
+        fnolAdvancedPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  }
+
 })();

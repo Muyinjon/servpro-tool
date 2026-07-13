@@ -2,13 +2,25 @@
   const root = global.ServproUploadExtension || (global.ServproUploadExtension = {});
 
   const NOTES_MAX_LENGTH = 500;
+  const NOTES_MAX_CAP = 2000;
 
   function normalizeText(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
   }
 
+  function resolveNotesMaxLength(maxLength) {
+    if (typeof maxLength !== "number" || !Number.isFinite(maxLength)) {
+      return NOTES_MAX_LENGTH;
+    }
+    const floor = Math.floor(maxLength);
+    if (floor < NOTES_MAX_LENGTH) {
+      return NOTES_MAX_LENGTH;
+    }
+    return Math.min(NOTES_MAX_CAP, floor);
+  }
+
   function truncateNoteText(text, maxLength) {
-    const limit = typeof maxLength === "number" ? maxLength : NOTES_MAX_LENGTH;
+    const limit = resolveNotesMaxLength(maxLength);
     const normalized = normalizeText(text);
     if (normalized.length <= limit) {
       return { text: normalized, trimmed: false };
@@ -60,6 +72,8 @@
 
   root.fnolNotes = {
     NOTES_MAX_LENGTH,
+    NOTES_MAX_CAP,
+    resolveNotesMaxLength,
     truncateNoteText,
     getNoteTextFromPayload,
     buildFnolNotes,

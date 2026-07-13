@@ -56,6 +56,7 @@
     addLocation: "value_AddLocation_",
     billAddress: "value_BillAddress_",
     coordinator: "value_Coordinator_1",
+    projectManager: "value_fkPrjMan_1",
     reconManager: "value_fkReconManId_1",
     insuranceCarrier: "value_InsuranceCompany_1",
     lossType: "value_fkLossType_1",

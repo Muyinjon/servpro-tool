@@ -267,6 +267,30 @@
           </div>
         </section>
 
+        <section id="fnolAdvancedCard" class="sp-card sp-accordion" data-accordion>
+          <button type="button" class="sp-accordion-toggle" aria-expanded="false" data-accordion-toggle>
+            <span class="sp-accordion-title">Advanced FNOL</span>
+            <span class="sp-accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="sp-accordion-body" hidden>
+            <p class="sp-hint">
+              Customize presets, optional fields, and custom inputs on the FNOL page so you can see the form
+              change in real time.
+            </p>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolAdvancedEnabled" />
+              <label
+                for="fnolAdvancedEnabled"
+                title="Turns on named FNOL presets, optional fields, custom fields, and a higher notes limit."
+                >Enable Advanced FNOL customization</label
+              >
+            </div>
+            <div class="sp-actions">
+              <a id="openFnolAdvancedLink" class="sp-btn secondary sm" href="#">Open FNOL to customize</a>
+            </div>
+          </div>
+        </section>
+
         <section id="snapshotMaxxingCard" class="sp-card sp-accordion" data-accordion>
           <button type="button" class="sp-accordion-toggle" aria-expanded="false" data-accordion-toggle>
             <span class="sp-accordion-title">Project Snapshot Maxxing</span>
@@ -446,6 +470,7 @@
       </div>
     </div>
 
+    <script src="src/lib/fnolFieldCatalog.js"></script>
     <script src="src/lib/settings.js"></script>
     <script src="src/lib/tenantRegistry.js"></script>
     <script src="src/ui/theme.js"></script>

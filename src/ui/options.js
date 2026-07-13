@@ -4,6 +4,8 @@
     return;
   }
 
+  const catalogApi = window.ServproUploadExtension && window.ServproUploadExtension.fnolFieldCatalog;
+
   const upsellBlock = document.getElementById("upsellBlock");
   const trialActiveBlock = document.getElementById("trialActiveBlock");
   const trialActiveStatus = document.getElementById("trialActiveStatus");
@@ -15,23 +17,18 @@
   const resetActivationBtn2 = document.getElementById("resetActivationBtn2");
   const activationStatus = document.getElementById("activationStatus");
   const fnolAccessStatus = document.getElementById("fnolAccessStatus");
-  const activationCard = document.getElementById("activationCard");
   const teamAllenToolsSection = document.getElementById("teamAllenToolsSection");
   const saveSettingsBtn = document.getElementById("saveSettingsBtn");
   const settingsStatus = document.getElementById("settingsStatus");
   const openFnolLink = document.getElementById("openFnolLink");
+  const openFnolAdvancedLink = document.getElementById("openFnolAdvancedLink");
   const defaultJobModeOnFill = document.getElementById("defaultJobModeOnFill");
   const teamAllenAddJobUi = document.getElementById("teamAllenAddJobUi");
   const darkModeCheckbox = document.getElementById("darkMode");
-
-  // Selects for new FNOL default settings
-  const fnolDefaultPropertyType = document.getElementById("fnolDefaultPropertyType");
-  const fnolDefaultPayType = document.getElementById("fnolDefaultPayType");
-  const fnolDefaultBusinessUnit = document.getElementById("fnolDefaultBusinessUnit");
-  const fnolDefaultJobStatus = document.getElementById("fnolDefaultJobStatus");
   const fnolIntakeInitials = document.getElementById("fnolIntakeInitials");
   const googleFormBackupHeading = document.getElementById("googleFormBackupHeading");
   const googleFormBackupHint = document.getElementById("googleFormBackupHint");
+  const fnolAdvancedEnabled = document.getElementById("fnolAdvancedEnabled");
 
   const teamCheckboxIds = [
     "hideListPanel",
@@ -63,7 +60,6 @@
     "snapshotOffsetProjectCompletedMinutes"
   ];
 
-  // All team-settings selects (besides the two legacy ones)
   const fnolSelectIds = [
     "fnolDefaultPropertyType",
     "fnolDefaultPayType",
@@ -71,17 +67,30 @@
     "fnolDefaultJobStatus"
   ];
 
-  function fnolPageUrl() {
-    return chrome.runtime.getURL("fnol.html");
+  const LEGACY_TO_PRESET = {
+    fnolDefaultPropertyType: "propertyType",
+    fnolDefaultPayType: "payType",
+    fnolDefaultBusinessUnit: "businessUnit",
+    fnolDefaultJobStatus: "jobStatus"
+  };
+
+  function fnolPageUrl(hash) {
+    return chrome.runtime.getURL("fnol.html") + (hash || "");
   }
 
-  if (openFnolLink) {
-    openFnolLink.href = fnolPageUrl();
-    openFnolLink.addEventListener("click", function onOpenFnol(e) {
+  function bindOpenFnol(link, hash) {
+    if (!link) {
+      return;
+    }
+    link.href = fnolPageUrl(hash);
+    link.addEventListener("click", function onOpenFnol(e) {
       e.preventDefault();
-      chrome.tabs.create({ url: fnolPageUrl() });
+      chrome.tabs.create({ url: fnolPageUrl(hash) });
     });
   }
+
+  bindOpenFnol(openFnolLink, "");
+  bindOpenFnol(openFnolAdvancedLink, "#advanced");
 
   function setStatus(el, message, kind) {
     if (!el) {
@@ -107,10 +116,8 @@
   function setToolSectionsVisible(tier, settings) {
     const isTeamAllen = tier === "teamallenssm";
 
-    // TeamAllen-only settings section
     showEl(teamAllenToolsSection, isTeamAllen);
 
-    // Activation card state
     const isNone = tier === "none" || tier === "trial-expired";
     showEl(upsellBlock, isNone);
     showEl(activationForm, isNone);
@@ -136,12 +143,10 @@
       );
     }
 
-    // Clear the FNOL access status message when tier is now active
     if (tier !== "none" && tier !== "trial-expired" && fnolAccessStatus) {
       setStatus(fnolAccessStatus, "", "");
     }
 
-    // Dynamic Google Form backup heading and hint from tenant registry
     const activeTier = settings ? settingsApi.getActivationTier(settings) : tier;
     const profile = settingsApi.getTenantProfile && settingsApi.getTenantProfile(activeTier);
     if (profile) {
@@ -170,7 +175,32 @@
     if (tier === "trial") {
       return settingsApi.isTrialExpired(settings) ? "trial-expired" : "trial-active";
     }
-    return tier; // "none" or "teamallenssm"
+    return tier;
+  }
+
+  function patchActivePresetFromLegacy(settings, partial) {
+    if (!catalogApi || !settings || !settings.fnolAdvancedEnabled) {
+      return partial;
+    }
+    const migrated = catalogApi.migrateLegacyIntoActivePreset(settings);
+    const presets = catalogApi.normalizePresets(migrated.fnolPresets, migrated);
+    const activeId = migrated.fnolActivePresetId || (presets[0] && presets[0].id);
+    const nextPresets = presets.map(function mapPreset(preset) {
+      if (preset.id !== activeId) {
+        return preset;
+      }
+      const defaults = Object.assign({}, preset.defaults);
+      Object.keys(LEGACY_TO_PRESET).forEach(function eachKey(settingKey) {
+        if (Object.prototype.hasOwnProperty.call(partial, settingKey)) {
+          defaults[LEGACY_TO_PRESET[settingKey]] = partial[settingKey] || "";
+        }
+      });
+      return Object.assign({}, preset, { defaults: defaults });
+    });
+    return Object.assign({}, partial, {
+      fnolPresets: nextPresets,
+      fnolActivePresetId: activeId
+    });
   }
 
   function readPublicSettingsFromForm() {
@@ -201,6 +231,9 @@
     });
     if (fnolIntakeInitials) {
       partial.fnolIntakeInitials = String(fnolIntakeInitials.value || "").trim();
+    }
+    if (fnolAdvancedEnabled) {
+      partial.fnolAdvancedEnabled = fnolAdvancedEnabled.checked;
     }
     snapshotOffsetIds.forEach(function eachId(id) {
       const el = document.getElementById(id);
@@ -239,6 +272,9 @@
     if (fnolIntakeInitials && settings) {
       fnolIntakeInitials.value = settings.fnolIntakeInitials || "";
     }
+    if (fnolAdvancedEnabled && settings) {
+      fnolAdvancedEnabled.checked = Boolean(settings.fnolAdvancedEnabled);
+    }
     snapshotOffsetIds.forEach(function eachId(id) {
       const el = document.getElementById(id);
       if (el && settings && settings[id] !== undefined) {
@@ -257,7 +293,8 @@
       if (!settingsApi.isTeamAllenActivated(current)) {
         return;
       }
-      settingsApi.saveSettings(readTeamSettingsFromForm());
+      const partial = readTeamSettingsFromForm();
+      settingsApi.saveSettings(patchActivePresetFromLegacy(current, partial));
     });
   }
 
@@ -350,9 +387,13 @@
           setStatus(settingsStatus, "These settings require a full team access code.", "error");
           return;
         }
-        settingsApi.saveSettings(readTeamSettingsFromForm(), function onSaved(ok) {
-          setStatus(settingsStatus, ok ? "Settings saved." : "Failed to save.", ok ? "ok" : "error");
-        });
+        const partial = readTeamSettingsFromForm();
+        settingsApi.saveSettings(
+          patchActivePresetFromLegacy(current, partial),
+          function onSaved(ok) {
+            setStatus(settingsStatus, ok ? "Settings saved." : "Failed to save.", ok ? "ok" : "error");
+          }
+        );
       });
     });
   }
@@ -382,6 +423,10 @@
   if (fnolIntakeInitials) {
     fnolIntakeInitials.addEventListener("change", autoSaveTeamSettings);
     fnolIntakeInitials.addEventListener("blur", autoSaveTeamSettings);
+  }
+
+  if (fnolAdvancedEnabled) {
+    fnolAdvancedEnabled.addEventListener("change", autoSaveTeamSettings);
   }
 
   snapshotOffsetIds.forEach(function eachId(id) {

@@ -63,6 +63,7 @@
   //   features       {object}  capability flags
   //     .googleFormBackup    {boolean}
   //     .teamAllenAutofill   {boolean}
+  //     .advancedFnol        {boolean}
   var TENANT_PROFILES = {
     "teamallenssm": {
       displayName: "TeamAllen SSM",
@@ -70,7 +71,8 @@
       submitHandler: "teamallenssm",
       features: {
         googleFormBackup: true,
-        teamAllenAutofill: true
+        teamAllenAutofill: true,
+        advancedFnol: true
       }
     }
     // ── Future team example ──────────────────────────────────────────────────
