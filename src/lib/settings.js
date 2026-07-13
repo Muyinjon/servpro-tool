@@ -46,8 +46,38 @@
     fnolCopyOnSubmit: false,
     fnolIntakeInitials: "",
     fnolGoogleFormBackup: true,
-    fnolAddressLookupHelper: false
+    fnolAddressLookupHelper: false,
+    snapshotMaxxingEnabled: true,
+    snapshotOffsetCustomerCalledMinutes: 10,
+    snapshotOffsetApptStartMinutes: 60,
+    snapshotOffsetApptEndMinutes: 60,
+    snapshotOffsetSiteInspectedMinutes: 60,
+    snapshotOffsetEstimateDeliveredMinutes: 70,
+    snapshotOffsetEstimateApprovedMinutes: 80,
+    snapshotOffsetWaSignedMinutes: 80,
+    snapshotOffsetTargetStartMinutes: 80,
+    snapshotOffsetTargetCompletionMinutes: 4320,
+    snapshotOffsetWorkStartMinutes: 80,
+    snapshotOffsetDryingStartedMinutes: 80,
+    snapshotOffsetDryingCompletedMinutes: 140,
+    snapshotOffsetProjectCompletedMinutes: 200
   };
+
+  const SNAPSHOT_OFFSET_KEYS = [
+    "snapshotOffsetCustomerCalledMinutes",
+    "snapshotOffsetApptStartMinutes",
+    "snapshotOffsetApptEndMinutes",
+    "snapshotOffsetSiteInspectedMinutes",
+    "snapshotOffsetEstimateDeliveredMinutes",
+    "snapshotOffsetEstimateApprovedMinutes",
+    "snapshotOffsetWaSignedMinutes",
+    "snapshotOffsetTargetStartMinutes",
+    "snapshotOffsetTargetCompletionMinutes",
+    "snapshotOffsetWorkStartMinutes",
+    "snapshotOffsetDryingStartedMinutes",
+    "snapshotOffsetDryingCompletedMinutes",
+    "snapshotOffsetProjectCompletedMinutes"
+  ];
 
   function getStorage() {
     return global.chrome && global.chrome.storage && global.chrome.storage.local
@@ -61,6 +91,14 @@
       value === 1 ||
       String(value || "").trim().toLowerCase() === "true"
     );
+  }
+
+  function normalizeOffsetMinutes(value, fallback) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) {
+      return typeof fallback === "number" ? fallback : 0;
+    }
+    return Math.floor(n);
   }
 
   function normalizeStoredRecord(raw) {
@@ -130,6 +168,10 @@
       merged.defaultJobModeOnFill = "none";
     }
     merged.teamAllenAddJobUi = merged.teamAllenAddJobUi === "page" ? "page" : "modal";
+    merged.snapshotMaxxingEnabled = isTruthyFlag(merged.snapshotMaxxingEnabled);
+    SNAPSHOT_OFFSET_KEYS.forEach(function eachOffsetKey(key) {
+      merged[key] = normalizeOffsetMinutes(merged[key], DEFAULT_SETTINGS[key]);
+    });
 
     // Preserve trialStartedAt if present
     if (record && record.trialStartedAt) {

@@ -10,12 +10,19 @@
     fullAddress: { id: "MainContent_JobInfoHeader1_txt_FullAddress", kind: "text" },
     lossType: { id: "MainContent_JobInfoHeader1_snap_ListType", kind: "text" },
     causeOfLoss: { id: "MainContent_JobInfoHeader1_snap_CauseOfLoss", kind: "text" },
-    claimNumber: { id: "MainContent_JobInfoHeader1_lblJobLotBlock", kind: "text" },
+    // Form claim is primary; header lblJobLotBlock is often empty/hidden.
+    claimNumber: { id: "MainContent_txt_LotBlock", kind: "inputValue" },
+    claimNumberHeader: { id: "MainContent_JobInfoHeader1_lblJobLotBlock", kind: "text" },
+    projectId: { id: "MainContent_txt_JobID", kind: "inputValue" },
+    notes: { id: "MainContent_txt_Notes", kind: "inputValue" },
     propertyType: { id: "MainContent_cmb_JobType", kind: "selectText" },
-    policyNumber: { id: "jobCustom1", kind: "inputValue" },
+    // jobCustom* ids are duplicated on wrapper DIVs — prefer name=jobCustomN in the scraper.
+    policyNumber: { id: "jobCustom1", name: "jobCustom1", kind: "inputValue" },
+    deductible: { id: "jobCustom2", name: "jobCustom2", kind: "inputValue" },
     insuranceCarrier: { id: "ctl00_MainContent_cmb_Project_Input", kind: "inputValue" },
     address1: { id: "MainContent_txt_Address1", kind: "inputValue" },
     yearBuilt: { id: "MainContent_txt_YearHouseBuilt", kind: "inputValue" },
+    yearBuiltRad: { id: "ctl00_MainContent_txt_YearHouseBuilt", kind: "inputValue" },
     building: { id: "MainContent_txt_Bldg", kind: "inputValue" },
     unit: { id: "MainContent_txt_Unit", kind: "inputValue" },
     city: { id: "MainContent_txt_City", kind: "inputValue" },
@@ -195,7 +202,8 @@
     if (!/\d/.test(text)) {
       return false;
     }
-    if (!/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(text.replace(/\s+/g, ""))) {
+    // Allow State Farm-style claims with a colon suffix (e.g. 320H7R728:RECON).
+    if (!/^[A-Za-z0-9][A-Za-z0-9:-]*$/.test(text.replace(/\s+/g, ""))) {
       return false;
     }
     return true;

@@ -53,14 +53,74 @@
   }
 
   function byIdValue(id) {
+    return byIdControlValue(id);
+  }
+
+  function isValueControl(node) {
+    if (!node) {
+      return false;
+    }
+    const tag = String(node.tagName || "").toUpperCase();
+    if (tag === "TEXTAREA" || tag === "SELECT") {
+      return true;
+    }
+    if (tag !== "INPUT") {
+      return false;
+    }
+    const type = String(node.type || "").toLowerCase();
+    return type !== "checkbox" && type !== "radio" && type !== "hidden"
+      && type !== "button" && type !== "submit";
+  }
+
+  function readValueControl(node) {
+    if (!isValueControl(node)) {
+      return "";
+    }
+    const tag = String(node.tagName || "").toUpperCase();
+    if (tag === "SELECT") {
+      const option = node.options && node.options[node.selectedIndex];
+      return normalizeText(option ? option.textContent : node.value);
+    }
+    return normalizeText(node.value);
+  }
+
+  // WorkCenter jobCustom* markup duplicates id on the wrapper DIV and the input.
+  // Prefer name= (unique on the real control) over getElementById.
+  function byNameControlValue(name) {
+    const nodes = document.querySelectorAll(
+      'input[name="' + name + '"], textarea[name="' + name + '"], select[name="' + name + '"]'
+    );
+    for (let index = 0; index < nodes.length; index += 1) {
+      const value = readValueControl(nodes[index]);
+      if (value !== "") {
+        return value;
+      }
+      if (isValueControl(nodes[index])) {
+        return "";
+      }
+    }
+    return "";
+  }
+
+  function byIdControlValue(id) {
+    if (/^jobCustom\d+$/i.test(id)) {
+      const byName = byNameControlValue(id);
+      if (byName !== "") {
+        return byName;
+      }
+    }
     const node = document.getElementById(id);
     if (!node) {
       return "";
     }
-    if (node.tagName === "INPUT" || node.tagName === "TEXTAREA" || node.tagName === "SELECT") {
-      return normalizeText(node.value);
+    const direct = readValueControl(node);
+    if (direct !== "" || isValueControl(node)) {
+      return direct;
     }
-    return normalizeText(node.textContent);
+    const nested = node.querySelector(
+      "input.frmField, input.textBox, input.rcbInput, textarea.lblNotes, textarea, select.frmField, select"
+    );
+    return readValueControl(nested);
   }
 
   function selectSelectedText(id) {
@@ -124,6 +184,110 @@
         return line.trim();
       })
       .filter(Boolean);
+  }
+
+  function getJobDetailsRoot() {
+    return document.getElementById("jobDetailWrapper")
+      || document.getElementById("MainContent_pnl_JobDetailsHead")
+      || document.getElementById("bodyWrapper")
+      || document.body;
+  }
+
+  function readControlValue(node) {
+    if (!node) {
+      return "";
+    }
+    const tag = String(node.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA") {
+      const type = String(node.type || "").toLowerCase();
+      if (type === "checkbox" || type === "radio" || type === "hidden" || type === "button" || type === "submit") {
+        return "";
+      }
+      return normalizeText(node.value);
+    }
+    if (tag === "SELECT") {
+      const option = node.options && node.options[node.selectedIndex];
+      return normalizeText(option ? option.textContent : node.value);
+    }
+    return "";
+  }
+
+  function findControlNearLabel(labelNode) {
+    if (!labelNode) {
+      return null;
+    }
+    const group = labelNode.closest
+      ? (labelNode.closest(".input-group") || labelNode.closest("#jobCustom1") || labelNode.parentElement)
+      : labelNode.parentElement;
+    if (!group) {
+      return null;
+    }
+    const candidates = group.querySelectorAll(
+      "input.frmField, input.rcbInput, input.textBox, textarea.lblNotes, textarea, select.frmField, select"
+    );
+    for (let index = 0; index < candidates.length; index += 1) {
+      const value = readControlValue(candidates[index]);
+      if (value) {
+        return candidates[index];
+      }
+    }
+    for (let index = 0; index < candidates.length; index += 1) {
+      const candidate = candidates[index];
+      const type = String(candidate.type || "").toLowerCase();
+      if (
+        candidate.tagName === "INPUT"
+        && type !== "hidden"
+        && type !== "checkbox"
+        && type !== "radio"
+        && type !== "button"
+        && type !== "submit"
+      ) {
+        return candidate;
+      }
+      if (candidate.tagName === "TEXTAREA" || candidate.tagName === "SELECT") {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  function extractByLabeledControl(labels, options) {
+    const opts = options || {};
+    const root = getJobDetailsRoot();
+    if (!root) {
+      return "";
+    }
+    const labelList = Array.isArray(labels) ? labels : [labels];
+    const nodes = root.querySelectorAll(".lblField, label.lblField, span.lblField");
+    for (let labelIndex = 0; labelIndex < labelList.length; labelIndex += 1) {
+      const wanted = normalizeKey(labelList[labelIndex]).replace(/:$/, "");
+      for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+        const node = nodes[nodeIndex];
+        const labelText = normalizeKey(node.textContent).replace(/:$/, "");
+        if (!labelText) {
+          continue;
+        }
+        if (labelText !== wanted) {
+          if (labelText.indexOf(wanted) !== 0) {
+            continue;
+          }
+          const nextChar = labelText.charAt(wanted.length);
+          if (nextChar && /[a-z0-9]/.test(nextChar)) {
+            continue;
+          }
+        }
+        const control = findControlNearLabel(node);
+        const value = readControlValue(control);
+        if (!value) {
+          continue;
+        }
+        if (opts.validateValue && !opts.validateValue(value)) {
+          continue;
+        }
+        return value;
+      }
+    }
+    return "";
   }
 
   function extractByLabel(labels, options) {
@@ -196,9 +360,13 @@
   }
 
   function extractClaimNumber() {
+    // Prefer the General form input; header lblJobLotBlock is often empty/hidden.
     const sources = [
-      byIdText("MainContent_JobInfoHeader1_lblJobLotBlock"),
       byIdValue("MainContent_txt_LotBlock"),
+      extractByLabeledControl("Claim Number", {
+        validateValue: isPlausibleClaimNumber
+      }),
+      byIdText("MainContent_JobInfoHeader1_lblJobLotBlock"),
       extractByLabel("Claim Number", {
         requireColon: true,
         inlineOnly: true,
@@ -215,7 +383,7 @@
 
     const lines = getBodyLines();
     for (const line of lines) {
-      const match = line.match(/claim number\s*:\s*([A-Za-z0-9-]+)/i);
+      const match = line.match(/claim number\s*:\s*([A-Za-z0-9][A-Za-z0-9:-]*)/i);
       if (match && match[1]) {
         const sanitized = sanitizeClaimNumber(match[1]);
         if (sanitized) {
@@ -329,6 +497,7 @@
 
     const propertyType = firstNonEmpty([
       selectSelectedText("MainContent_cmb_JobType"),
+      extractByLabeledControl("Property Type"),
       extractByLabel("Property Type")
     ]);
 
@@ -361,10 +530,36 @@
 
     const insuranceRaw = firstNonEmpty([
       byIdValue("ctl00_MainContent_cmb_Project_Input"),
-      extractByLabel("Insurance Carrier"),
-      extractByLabel("Insurance Company")
+      extractByLabeledControl("Insurance Carrier"),
+      extractByLabel(["Insurance Carrier", "Insurance Company"])
     ]);
     const claimNumber = extractClaimNumber();
+    const notes = firstNonEmpty([
+      byIdValue("MainContent_txt_Notes"),
+      extractByLabeledControl("Notes")
+    ]);
+    const policyNumber = firstNonEmpty([
+      byNameControlValue("jobCustom1"),
+      byIdControlValue("jobCustom1"),
+      extractByLabeledControl(["Policy Numbr", "Policy Number"])
+    ]);
+    const deductible = firstNonEmpty([
+      byNameControlValue("jobCustom2"),
+      byIdControlValue("jobCustom2"),
+      extractByLabeledControl(["Deductible Amt", "Deductible"])
+    ]);
+    const projectId = firstNonEmpty([
+      byIdValue("MainContent_txt_JobID"),
+      extractByLabeledControl(["ID", "Job ID", "Project ID"]),
+      byIdText("MainContent_JobInfoHeader1_lbl_JobId"),
+      extractByLabel("Project ID")
+    ]);
+    const yearBuilt = firstNonEmpty([
+      byIdValue("MainContent_txt_YearHouseBuilt"),
+      byIdValue("ctl00_MainContent_txt_YearHouseBuilt"),
+      extractByLabeledControl("Year Built"),
+      extractByLabel(["Year Built", "YearBuilt"])
+    ]);
 
     const explicitBusiness = extractExplicitBusinessName();
     const isCommercial = isCommercialProperty(propertyType) ||
@@ -408,7 +603,7 @@
 
     return {
       projectName,
-      projectId: extractByLabel("Project ID"),
+      projectId,
       projectProgress: extractByLabel("Project Progress"),
       lossType: firstNonEmpty([
         byIdText("MainContent_JobInfoHeader1_snap_ListType"),
@@ -429,18 +624,22 @@
       city,
       state,
       zip,
-      yearBuilt: firstNonEmpty([
-        byIdValue("MainContent_txt_YearHouseBuilt"),
-        extractByLabel(["Year Built", "YearBuilt"])
-      ]),
+      yearBuilt,
       propertyType,
       franchiseName: byIdText("MainContent_JobInfoHeader1_lblJobSite"),
       businessUnit: deriveBusinessUnit(byIdText("MainContent_JobInfoHeader1_lblJobSite")),
-      country: firstNonEmpty([extractByLabel("Country"), parsedAddress.country]),
+      country: firstNonEmpty([
+        extractByLabeledControl("Country"),
+        extractByLabel("Country"),
+        parsedAddress.country
+      ]),
       fullAddress,
       insuranceCarrier: stripParenthetical(insuranceRaw),
       payType: derivePayType(insuranceRaw, claimNumber),
-      policyNumber: byIdValue("jobCustom1"),
+      policyNumber,
+      deductible,
+      notes,
+      notesUser: notes,
       coordinator: stripParenthetical(coordinatorRaw),
       addLocation,
       billAddress: true,

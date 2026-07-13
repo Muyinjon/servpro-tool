@@ -43,7 +43,24 @@
     "fnolClearAfterSubmit",
     "fnolCopyOnSubmit",
     "fnolGoogleFormBackup",
-    "fnolAddressLookupHelper"
+    "fnolAddressLookupHelper",
+    "snapshotMaxxingEnabled"
+  ];
+
+  const snapshotOffsetIds = [
+    "snapshotOffsetCustomerCalledMinutes",
+    "snapshotOffsetApptStartMinutes",
+    "snapshotOffsetApptEndMinutes",
+    "snapshotOffsetSiteInspectedMinutes",
+    "snapshotOffsetEstimateDeliveredMinutes",
+    "snapshotOffsetEstimateApprovedMinutes",
+    "snapshotOffsetWaSignedMinutes",
+    "snapshotOffsetTargetStartMinutes",
+    "snapshotOffsetTargetCompletionMinutes",
+    "snapshotOffsetWorkStartMinutes",
+    "snapshotOffsetDryingStartedMinutes",
+    "snapshotOffsetDryingCompletedMinutes",
+    "snapshotOffsetProjectCompletedMinutes"
   ];
 
   // All team-settings selects (besides the two legacy ones)
@@ -185,6 +202,13 @@
     if (fnolIntakeInitials) {
       partial.fnolIntakeInitials = String(fnolIntakeInitials.value || "").trim();
     }
+    snapshotOffsetIds.forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        const n = Number(el.value);
+        partial[id] = Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+      }
+    });
     return partial;
   }
 
@@ -215,6 +239,12 @@
     if (fnolIntakeInitials && settings) {
       fnolIntakeInitials.value = settings.fnolIntakeInitials || "";
     }
+    snapshotOffsetIds.forEach(function eachId(id) {
+      const el = document.getElementById(id);
+      if (el && settings && settings[id] !== undefined) {
+        el.value = String(settings[id]);
+      }
+    });
     setToolSectionsVisible(resolveTierUiState(settings), settings);
   }
 
@@ -353,4 +383,63 @@
     fnolIntakeInitials.addEventListener("change", autoSaveTeamSettings);
     fnolIntakeInitials.addEventListener("blur", autoSaveTeamSettings);
   }
+
+  snapshotOffsetIds.forEach(function eachId(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", autoSaveTeamSettings);
+      el.addEventListener("blur", autoSaveTeamSettings);
+    }
+  });
+
+  function closeAccordion(section) {
+    if (!section) {
+      return;
+    }
+    section.classList.remove("is-open");
+    const toggle = section.querySelector("[data-accordion-toggle]");
+    const body = section.querySelector(".sp-accordion-body");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", "false");
+    }
+    if (body) {
+      body.hidden = true;
+    }
+  }
+
+  function openAccordion(section) {
+    if (!section) {
+      return;
+    }
+    section.classList.add("is-open");
+    const toggle = section.querySelector("[data-accordion-toggle]");
+    const body = section.querySelector(".sp-accordion-body");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", "true");
+    }
+    if (body) {
+      body.hidden = false;
+    }
+  }
+
+  function initAccordions() {
+    const sections = Array.prototype.slice.call(
+      document.querySelectorAll("[data-accordion]")
+    );
+    sections.forEach(function eachSection(section) {
+      const toggle = section.querySelector("[data-accordion-toggle]");
+      if (!toggle) {
+        return;
+      }
+      toggle.addEventListener("click", function onToggle() {
+        const isOpen = section.classList.contains("is-open");
+        sections.forEach(closeAccordion);
+        if (!isOpen) {
+          openAccordion(section);
+        }
+      });
+    });
+  }
+
+  initAccordions();
 })();

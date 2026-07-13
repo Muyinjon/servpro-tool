@@ -97,163 +97,350 @@
 
       <!-- TeamAllen-specific settings — teamallenssm only -->
       <div id="teamAllenToolsSection" class="sp-hidden" hidden>
-        <section id="settingsCard" class="sp-card">
-          <h2>Import &amp; display</h2>
-          <div class="sp-row">
-            <input type="checkbox" id="hideListPanel" />
-            <label for="hideListPanel">Hide list page paste panel</label>
+        <section id="settingsCard" class="sp-card sp-accordion" data-accordion>
+          <button type="button" class="sp-accordion-toggle" aria-expanded="false" data-accordion-toggle>
+            <span class="sp-accordion-title">Import &amp; display</span>
+            <span class="sp-accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="sp-accordion-body" hidden>
+            <div class="sp-row">
+              <input type="checkbox" id="hideListPanel" />
+              <label for="hideListPanel">Hide list page paste panel</label>
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="hideAddEditHelperPanel" />
+              <label for="hideAddEditHelperPanel">Hide add/edit import helper panel</label>
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="autoCollapsePanels" />
+              <label for="autoCollapsePanels">Auto-collapse helper panels on load</label>
+            </div>
+            <div class="sp-field">
+              <label for="defaultJobModeOnFill">Default coordinator mode on fill</label>
+              <select id="defaultJobModeOnFill" name="defaultJobModeOnFill">
+                <option value="none">Non-default</option>
+                <option value="recon">Default recon</option>
+                <option value="mitigation">Default mitigation</option>
+              </select>
+            </div>
+            <div class="sp-field">
+              <label for="teamAllenAddJobUi">New job opens as</label>
+              <select id="teamAllenAddJobUi" name="teamAllenAddJobUi">
+                <option value="modal">List popup (modal)</option>
+                <option value="page">Full page</option>
+              </select>
+              <p class="sp-hint">Popup opens the jobs list and Add Job modal (recommended).</p>
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolAutoSave" />
+              <label
+                for="fnolAutoSave"
+                title="After FNOL submit, automatically save the job on TeamAllen when the form is ready."
+                >Auto-save after FNOL submit</label
+              >
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolPasteNotesAfterSave" />
+              <label
+                for="fnolPasteNotesAfterSave"
+                title="After the job is saved, automatically add FNOL notes when the Notes section is ready."
+                >After FNOL save, auto-add notes when Notes section is ready</label
+              >
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="showEditCopyButton" />
+              <label for="showEditCopyButton">Show "Copy current job" on edit pages</label>
+            </div>
+            <div class="sp-actions">
+              <button type="button" id="saveSettingsBtn" class="sp-btn secondary sm">Save import settings</button>
+            </div>
+            <div id="settingsStatus" class="sp-status"></div>
           </div>
-          <div class="sp-row">
-            <input type="checkbox" id="hideAddEditHelperPanel" />
-            <label for="hideAddEditHelperPanel">Hide add/edit import helper panel</label>
-          </div>
-          <div class="sp-row">
-            <input type="checkbox" id="autoCollapsePanels" />
-            <label for="autoCollapsePanels">Auto-collapse helper panels on load</label>
-          </div>
-          <div class="sp-field">
-            <label for="defaultJobModeOnFill">Default coordinator mode on fill</label>
-            <select id="defaultJobModeOnFill" name="defaultJobModeOnFill">
-              <option value="none">Non-default</option>
-              <option value="recon">Default recon</option>
-              <option value="mitigation">Default mitigation</option>
-            </select>
-          </div>
-          <div class="sp-field">
-            <label for="teamAllenAddJobUi">New job opens as</label>
-            <select id="teamAllenAddJobUi" name="teamAllenAddJobUi">
-              <option value="modal">List popup (modal)</option>
-              <option value="page">Full page</option>
-            </select>
-            <p class="sp-hint">Popup opens the jobs list and Add Job modal (recommended).</p>
-          </div>
-          <div class="sp-row">
-            <input type="checkbox" id="fnolAutoSave" />
-            <label
-              for="fnolAutoSave"
-              title="After FNOL submit, automatically save the job on TeamAllen when the form is ready."
-              >Auto-save after FNOL submit</label
-            >
-          </div>
-          <div class="sp-row">
-            <input type="checkbox" id="fnolPasteNotesAfterSave" />
-            <label
-              for="fnolPasteNotesAfterSave"
-              title="After the job is saved, automatically add FNOL notes when the Notes section is ready."
-              >After FNOL save, auto-add notes when Notes section is ready</label
-            >
-          </div>
-          <div class="sp-row">
-            <input type="checkbox" id="showEditCopyButton" />
-            <label for="showEditCopyButton">Show "Copy current job" on edit pages</label>
-          </div>
-          <div class="sp-actions">
-            <button type="button" id="saveSettingsBtn" class="sp-btn secondary sm">Save import settings</button>
-          </div>
-          <div id="settingsStatus" class="sp-status"></div>
         </section>
 
-        <section id="fnolSettingsCard" class="sp-card">
-          <h2>FNOL defaults</h2>
-          <p class="sp-hint">Pre-fill common fields and control what happens after submit.</p>
+        <section id="fnolSettingsCard" class="sp-card sp-accordion" data-accordion>
+          <button type="button" class="sp-accordion-toggle" aria-expanded="false" data-accordion-toggle>
+            <span class="sp-accordion-title">FNOL defaults</span>
+            <span class="sp-accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="sp-accordion-body" hidden>
+            <p class="sp-hint">Pre-fill common fields and control what happens after submit.</p>
 
-          <div class="sp-field">
-            <label for="fnolDefaultPropertyType">Default property type</label>
-            <select id="fnolDefaultPropertyType" name="fnolDefaultPropertyType">
-              <option value="">— None —</option>
-              <option value="Residential">Residential</option>
-              <option value="Commercial">Commercial</option>
-            </select>
-          </div>
+            <div class="sp-field">
+              <label for="fnolDefaultPropertyType">Default property type</label>
+              <select id="fnolDefaultPropertyType" name="fnolDefaultPropertyType">
+                <option value="">— None —</option>
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+              </select>
+            </div>
 
-          <div class="sp-field">
-            <label for="fnolDefaultPayType">Default pay type</label>
-            <select id="fnolDefaultPayType" name="fnolDefaultPayType">
-              <option value="">— None —</option>
-              <option value="SELF">SELF</option>
-              <option value="INSURANCE">INSURANCE</option>
-              <option value="3RD PARTY">3RD PARTY</option>
-              <option value="COMM Account">COMM Account</option>
-            </select>
-          </div>
+            <div class="sp-field">
+              <label for="fnolDefaultPayType">Default pay type</label>
+              <select id="fnolDefaultPayType" name="fnolDefaultPayType">
+                <option value="">— None —</option>
+                <option value="SELF">SELF</option>
+                <option value="INSURANCE">INSURANCE</option>
+                <option value="3RD PARTY">3RD PARTY</option>
+                <option value="COMM Account">COMM Account</option>
+              </select>
+            </div>
 
-          <div class="sp-field">
-            <label for="fnolDefaultBusinessUnit">Default business unit</label>
-            <select id="fnolDefaultBusinessUnit" name="fnolDefaultBusinessUnit">
-              <option value="">— None —</option>
-              <option value="NW Brooklyn">NW Brooklyn</option>
-              <option value="Staten Island">Staten Island</option>
-              <option value="Rockaways/Coney">Rockaways/Coney</option>
-              <option value="Forest Hills">Forest Hills</option>
-              <option value="Bay Ridge">Bay Ridge</option>
-              <option value="Mill Basin">Mill Basin</option>
-            </select>
-          </div>
+            <div class="sp-field">
+              <label for="fnolDefaultBusinessUnit">Default business unit</label>
+              <select id="fnolDefaultBusinessUnit" name="fnolDefaultBusinessUnit">
+                <option value="">— None —</option>
+                <option value="NW Brooklyn">NW Brooklyn</option>
+                <option value="Staten Island">Staten Island</option>
+                <option value="Rockaways/Coney">Rockaways/Coney</option>
+                <option value="Forest Hills">Forest Hills</option>
+                <option value="Bay Ridge">Bay Ridge</option>
+                <option value="Mill Basin">Mill Basin</option>
+              </select>
+            </div>
 
-          <div class="sp-field">
-            <label for="fnolDefaultJobStatus">Default job status</label>
-            <select id="fnolDefaultJobStatus" name="fnolDefaultJobStatus">
-              <option value="">— None —</option>
-              <option value="1">Estimate</option>
-              <option value="2">Testing</option>
-              <option value="3">On Hold</option>
-              <option value="4">Active</option>
-              <option value="12">Canceled</option>
-            </select>
-          </div>
+            <div class="sp-field">
+              <label for="fnolDefaultJobStatus">Default job status</label>
+              <select id="fnolDefaultJobStatus" name="fnolDefaultJobStatus">
+                <option value="">— None —</option>
+                <option value="1">Estimate</option>
+                <option value="2">Testing</option>
+                <option value="3">On Hold</option>
+                <option value="4">Active</option>
+                <option value="12">Canceled</option>
+              </select>
+            </div>
 
-          <div class="sp-row">
-            <input type="checkbox" id="fnolAddressLookupHelper" />
-            <label
-              for="fnolAddressLookupHelper"
-              title="Shows paste-to-parse helper on the FNOL address section."
-              >FNOL address paste helper</label
-            >
-          </div>
-          <div class="sp-row">
-            <input type="checkbox" id="fnolClearAfterSubmit" />
-            <label
-              for="fnolClearAfterSubmit"
-              title="Clears the FNOL form after a successful submit."
-              >Auto-clear form after submit</label
-            >
-          </div>
-          <div class="sp-row">
-            <input type="checkbox" id="fnolCopyOnSubmit" />
-            <label
-              for="fnolCopyOnSubmit"
-              title="Copies intake as plain text to the clipboard when you submit."
-              >Copy as plain text on submit</label
-            >
-          </div>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolAddressLookupHelper" />
+              <label
+                for="fnolAddressLookupHelper"
+                title="Shows paste-to-parse helper on the FNOL address section."
+                >FNOL address paste helper</label
+              >
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolClearAfterSubmit" />
+              <label
+                for="fnolClearAfterSubmit"
+                title="Clears the FNOL form after a successful submit."
+                >Auto-clear form after submit</label
+              >
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolCopyOnSubmit" />
+              <label
+                for="fnolCopyOnSubmit"
+                title="Copies intake as plain text to the clipboard when you submit."
+                >Copy as plain text on submit</label
+              >
+            </div>
 
-          <h3 class="sp-subheading" id="googleFormBackupHeading">Google Form backup</h3>
-          <p class="sp-hint" id="googleFormBackupHint">
-            Sends each FNOL submit to your team's backup Google Form.
-            Set your initials so the Sheet shows who did intake.
-          </p>
-          <div class="sp-field">
-            <label
-              for="fnolIntakeInitials"
-              title="Your initials appear on the Google Form backup row (e.g. IT). Required when backup is on."
-              >Intake initials</label
-            >
-            <input
-              id="fnolIntakeInitials"
-              name="fnolIntakeInitials"
-              type="text"
-              maxlength="8"
-              autocomplete="off"
-              placeholder="IT"
-            />
+            <h3 class="sp-subheading" id="googleFormBackupHeading">Google Form backup</h3>
+            <p class="sp-hint" id="googleFormBackupHint">
+              Sends each FNOL submit to your team's backup Google Form.
+              Set your initials so the Sheet shows who did intake.
+            </p>
+            <div class="sp-field">
+              <label
+                for="fnolIntakeInitials"
+                title="Your initials appear on the Google Form backup row (e.g. IT). Required when backup is on."
+                >Intake initials</label
+              >
+              <input
+                id="fnolIntakeInitials"
+                name="fnolIntakeInitials"
+                type="text"
+                maxlength="8"
+                autocomplete="off"
+                placeholder="IT"
+              />
+            </div>
+            <div class="sp-row">
+              <input type="checkbox" id="fnolGoogleFormBackup" />
+              <label
+                for="fnolGoogleFormBackup"
+                title="Sends each FNOL submit to your team's Google Form backup sheet (TeamAllen access only)."
+                >Send FNOL backup to Google Form on submit</label
+              >
+            </div>
           </div>
-          <div class="sp-row">
-            <input type="checkbox" id="fnolGoogleFormBackup" />
-            <label
-              for="fnolGoogleFormBackup"
-              title="Sends each FNOL submit to your team's Google Form backup sheet (TeamAllen access only)."
-              >Send FNOL backup to Google Form on submit</label
-            >
+        </section>
+
+        <section id="snapshotMaxxingCard" class="sp-card sp-accordion" data-accordion>
+          <button type="button" class="sp-accordion-toggle" aria-expanded="false" data-accordion-toggle>
+            <span class="sp-accordion-title">Project Snapshot Maxxing</span>
+            <span class="sp-accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="sp-accordion-body" hidden>
+            <p class="sp-hint">
+              On Work Center Project Snapshot, adds an M button on each field and a Fill All control.
+              Values are Date Received plus the offsets below (never auto-fills on load).
+            </p>
+            <div class="sp-row">
+              <input type="checkbox" id="snapshotMaxxingEnabled" />
+              <label
+                for="snapshotMaxxingEnabled"
+                title="Show Optimize buttons on Project Snapshot datetime fields."
+                >Enable Snapshot Maxxing</label
+              >
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetCustomerCalledMinutes"
+                >Customer Called — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetCustomerCalledMinutes"
+                name="snapshotOffsetCustomerCalledMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetApptStartMinutes"
+                >Site Appt Start — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetApptStartMinutes"
+                name="snapshotOffsetApptStartMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetApptEndMinutes"
+                >Site Appt End — minutes after Appt Start</label
+              >
+              <input
+                id="snapshotOffsetApptEndMinutes"
+                name="snapshotOffsetApptEndMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetSiteInspectedMinutes"
+                >Site Inspected — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetSiteInspectedMinutes"
+                name="snapshotOffsetSiteInspectedMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetEstimateDeliveredMinutes"
+                >Estimate Delivered — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetEstimateDeliveredMinutes"
+                name="snapshotOffsetEstimateDeliveredMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetEstimateApprovedMinutes"
+                >Estimate Approved — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetEstimateApprovedMinutes"
+                name="snapshotOffsetEstimateApprovedMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetWaSignedMinutes"
+                >WA Signed — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetWaSignedMinutes"
+                name="snapshotOffsetWaSignedMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetTargetStartMinutes"
+                >Target Start Date — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetTargetStartMinutes"
+                name="snapshotOffsetTargetStartMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetTargetCompletionMinutes"
+                >Target Completion — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetTargetCompletionMinutes"
+                name="snapshotOffsetTargetCompletionMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetWorkStartMinutes"
+                >Work Date Start — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetWorkStartMinutes"
+                name="snapshotOffsetWorkStartMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetDryingStartedMinutes"
+                >Drying Started — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetDryingStartedMinutes"
+                name="snapshotOffsetDryingStartedMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetDryingCompletedMinutes"
+                >Drying Completed — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetDryingCompletedMinutes"
+                name="snapshotOffsetDryingCompletedMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="sp-field">
+              <label for="snapshotOffsetProjectCompletedMinutes"
+                >Project Completed — minutes after Date Received</label
+              >
+              <input
+                id="snapshotOffsetProjectCompletedMinutes"
+                name="snapshotOffsetProjectCompletedMinutes"
+                type="number"
+                min="0"
+                step="1"
+              />
+            </div>
           </div>
         </section>
       </div>

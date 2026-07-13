@@ -65,7 +65,7 @@ Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-base
 
 1. Open a WorkCenter project page on `servpronet.io`.
 2. Use the floating **WorkCenter Import Helper**:
-   - `Scrape WorkCenter` reads stable field IDs (see `examples/workcenter-field.html`) and saves JSON to extension storage.
+   - `Scrape WorkCenter` reads General form fields (claim, address, notes, job ID) plus header when present (see `examples/workcenter-field.html`) and saves JSON to extension storage.
    - Expand **Show payload JSON** to review or edit values, then `Save payload`.
    - `Copy JSON` (in the JSON panel) copies the current editor text.
    - `Export JSON` downloads the current editor text as a `.json` file.
@@ -89,13 +89,14 @@ Cross-page helper for moving WorkCenter job data into TeamAllenssm with DOM-base
 | `payType` | Derived from insurance/claim | Pay Type |
 | `insuranceCarrier` | Insurance combobox input | Insurance Company |
 | `lossType` | Header loss type span | Loss Type |
-| `claimNumber` | Header or label | Claim # |
+| `claimNumber` | General form `#MainContent_txt_LotBlock` (header often empty); colon-style claims allowed | Claim # |
 | `coordinator` | Job File Coord. combobox | Coordinator |
 | `address1`–`zip`, `yearBuilt` | Structured address inputs (not header one-liner) | Customer address grid |
+| `notes` / `notesUser` | General `#MainContent_txt_Notes` | Notes paste flow |
 | `addLocation` | Derived from property type | Add Location (Residence/Commercial) |
 | `billAddress` | Default true | Bill Address checkbox |
 
-Metadata only in JSON (not filled on add form): `projectName`, `projectId`, `projectProgress`, `causeOfLoss`, `policyNumber`, `fullAddress`.
+Metadata only in JSON (not filled on add form): `projectName`, `projectId` (from `#MainContent_txt_JobID`), `projectProgress`, `causeOfLoss`, `policyNumber` / `deductible` (from `name=jobCustom1` / `jobCustom2`), `fullAddress`, `notes`.
 
 ### Commercial vs residential
 

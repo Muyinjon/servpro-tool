@@ -195,6 +195,72 @@
     return selectorsApi.normalizeText(getDisplayedDropdownText(host)) === selectorsApi.normalizeText(text);
   }
 
+  function getKendoDateTimePicker(hostOrInput) {
+    try {
+      if (!global.jQuery || typeof global.jQuery !== "function") {
+        return null;
+      }
+      const el = hostOrInput && hostOrInput.nodeType === 1 ? hostOrInput : null;
+      if (!el) {
+        return null;
+      }
+      const jq = global.jQuery(el);
+      if (jq.data("kendoDateTimePicker")) {
+        return jq.data("kendoDateTimePicker");
+      }
+      const embedded = el.querySelector
+        ? el.querySelector('[data-role="datetimepicker"]')
+        : null;
+      if (embedded) {
+        const jqInput = global.jQuery(embedded);
+        if (jqInput.data("kendoDateTimePicker")) {
+          return jqInput.data("kendoDateTimePicker");
+        }
+      }
+      const wrap = el.closest ? el.closest(".k-datetimepicker") : null;
+      if (wrap) {
+        const input = wrap.querySelector('[data-role="datetimepicker"]');
+        if (input) {
+          const jqWrapInput = global.jQuery(input);
+          if (jqWrapInput.data("kendoDateTimePicker")) {
+            return jqWrapInput.data("kendoDateTimePicker");
+          }
+        }
+      }
+    } catch (error) {
+      return null;
+    }
+    return null;
+  }
+
+  function getDateTimePickerValue(hostOrInput) {
+    const widget = getKendoDateTimePicker(hostOrInput);
+    if (widget && typeof widget.value === "function") {
+      const value = widget.value();
+      return value instanceof Date && !Number.isNaN(value.getTime()) ? value : null;
+    }
+    return null;
+  }
+
+  function setDateTimePickerValue(hostOrInput, date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+      return false;
+    }
+    const widget = getKendoDateTimePicker(hostOrInput);
+    if (!widget || typeof widget.value !== "function") {
+      return false;
+    }
+    try {
+      widget.value(date);
+      if (typeof widget.trigger === "function") {
+        widget.trigger("change");
+      }
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   root.kendoHelpers = {
     delay,
     isVisible,
@@ -202,6 +268,9 @@
     queryFirst,
     queryAll,
     getKendoWidget,
+    getKendoDateTimePicker,
+    getDateTimePickerValue,
+    setDateTimePickerValue,
     getDisplayedDropdownText,
     selectDropdownOption
   };

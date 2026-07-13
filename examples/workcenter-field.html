@@ -4,9 +4,15 @@ MainContent_JobInfoHeader1_UpdateContactButton = Business name = <input type="bu
 MainContent_JobInfoHeader1_txt_FullAddress = address1, city, state, zip, country = <span id="MainContent_JobInfoHeader1_txt_FullAddress" class="infoFontMedium" style="padding-left: 0;">165 Boyd St, Staten Island, NY 10304 United States</span>
 MainContent_JobInfoHeader1_snap_ListType = loss type = <span id="MainContent_JobInfoHeader1_snap_ListType" class="infoFontMedium remove-left-padding" style="padding-left: 0;">Water</span>
 ctl00_ctl00_MainContent_JobInfoHeader1_snap_CauseOfLossPanel = cause of loss = <div class="RadAjaxPanel" id="ctl00_ctl00_MainContent_JobInfoHeader1_snap_CauseOfLossPanel" style="display: block;"><span id="MainContent_JobInfoHeader1_snap_CauseOfLoss" class="infoFontMedium remove-left-padding">Pipe</span></div>
-MainContent_txt_LotBlock = claim number = <div class="input-label">
-    <span id="MainContent_lbl_LotBlock" class="lblField" style="background-color:White;">Claim Number:</span>
+MainContent_JobInfoHeader1_lblJobLotBlock = claim number (header, often empty/hidden) = <span id="MainContent_JobInfoHeader1_lblJobLotBlock" class="infoFontMedium remove-left-padding"></span>
+MainContent_txt_LotBlock = claim number (General form — preferred) = <div class="input-group">
+    <div class="input-label">
+        <span id="MainContent_lbl_LotBlock" class="lblField" style="background-color:White;">Claim Number:</span>
+    </div>
+    <input name="ctl00$MainContent$txt_LotBlock" type="text" value="320H7R728:RECON" maxlength="50" id="MainContent_txt_LotBlock" tabindex="30" class="frmField" style="width:200px;">
 </div>
+MainContent_txt_JobID = project / job id (General form) = <input name="ctl00$MainContent$txt_JobID" type="text" value="2607-339357REC" maxlength="100" id="MainContent_txt_JobID" disabled="disabled" class="aspNetDisabled frmField input-value">
+MainContent_txt_Notes = notes = <textarea name="ctl00$MainContent$txt_Notes" rows="2" cols="20" id="MainContent_txt_Notes" class="lblNotes">Caller Name: ... CLAIM REP. PHONE : ...</textarea>
 MainContent_tr_JobType = property type = <div id="MainContent_tr_JobType" class="input-group" style="display:inline;">
     <div class="input-label">
         <span id="MainContent_lbl_JobType" class="lblField" style="background-color:White;">Property Type:</span>
@@ -19,16 +25,23 @@ MainContent_tr_JobType = property type = <div id="MainContent_tr_JobType" class=
 </select>
     <span id="MainContent_RequiredFieldValidatorJobType" class="frmField" style="color:Red;display:none;">Required</span>
 </div>
-jobCustom1 = policy number = <div id="jobCustom1" class="input-group">
+jobCustom1 = policy number (prefer name=jobCustom1; wrapper DIV also uses id=jobCustom1) = <div id="jobCustom1" class="input-group">
     <div class="input-label">
         <label class="lblField" for="jobCustom1" name="jobCustom1">Policy Numbr:</label>
     </div>
     <input class="frmField input-value textBox" id="jobCustom1" name="jobCustom1" type="text" value="56GL23571">
     <label id="requiredMessage" class="errorText displayNone">Required</label>
 </div>
+jobCustom2 = deductible amt (prefer name=jobCustom2; wrapper DIV also uses id=jobCustom2) = <div id="jobCustom2" class="input-group">
+    <div class="input-label">
+        <label class="lblField" for="jobCustom2" name="jobCustom2">Deductible Amt:</label>
+    </div>
+    <input class="frmField input-value textBox" id="jobCustom2" name="jobCustom2" type="text" value="0">
+    <label id="requiredMessage" class="errorText displayNone">Required</label>
+</div>
 ctl00_MainContent_cmb_Project_Input = Insurance carrier = <input name="ctl00$MainContent$cmb_Project" type="text" class="rcbInput radPreventDecorate" id="ctl00_MainContent_cmb_Project_Input" value="State Farm (Insurance)" tabindex="5" disabled="disabled" autocomplete="off">
 ctl00$MainContent$txt_Address1 = address1 = <input name="ctl00$MainContent$txt_Address1" type="text" value="165 Boyd St" maxlength="100" id="MainContent_txt_Address1" tabindex="35" class="frmField pac-target-input" onchange="clearLatLng()" style="width:300px;" placeholder="Enter a location" autocomplete="off">
-ctl00_MainContent_txt_YearHouseBuilt = year built = <input name="ctl00$MainContent$txt_YearHouseBuilt" type="text" value="1985" maxlength="4" id="MainContent_txt_YearHouseBuilt" tabindex="36" class="frmField textBox" autocomplete="off">
+MainContent_txt_YearHouseBuilt / ctl00_MainContent_txt_YearHouseBuilt = year built = <input id="MainContent_txt_YearHouseBuilt" ...> or RadInput <input id="ctl00_MainContent_txt_YearHouseBuilt" name="ctl00$MainContent$txt_YearHouseBuilt" maxlength="4" class="riTextBox riEnabled" type="text">
 ctl00$MainContent$txt_Bldg = building = <input name="ctl00$MainContent$txt_Bldg" type="text" maxlength="50" id="MainContent_txt_Bldg" tabindex="45" class="frmField">
 ctl00$MainContent$txt_Unit = unit = <input name="ctl00$MainContent$txt_Unit" type="text" maxlength="50" id="MainContent_txt_Unit" tabindex="46" class="frmField">
 ctl00$MainContent$txt_City = city = <input name="ctl00$MainContent$txt_City" type="text" maxlength="50" id="MainContent_txt_City" tabindex="47" class="frmField">

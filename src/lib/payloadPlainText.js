@@ -159,6 +159,7 @@
       line("Insurance company", payload.insuranceCarrier || payload.insurance),
       line("Claim #", payload.claimNumber || payload.claim),
       line("Policy #", payload.policyNumber),
+      line("Deductible", payload.deductible),
       line("Adjuster name", payload.adjusterName),
       line("Adjuster phone", payload.adjusterPhone),
       line("Adjuster email", payload.adjusterEmail)
